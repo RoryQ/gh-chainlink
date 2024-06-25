@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/cli/go-gh/v2/pkg/repository"
@@ -19,15 +20,15 @@ type Chain struct {
 
 type ChainItem struct {
 	ChainIssue
-	Message string
-	Checked bool
-	Raw     string
+	IsCurrent bool
+	Message   string
+	Checked   bool
+	Raw       string
 }
 
 type ChainIssue struct {
 	Repo   repository.Repository
 	Number int
-	Title  string
 }
 
 func (i ChainIssue) Path() string {
@@ -82,16 +83,52 @@ func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 
 	for _, line := range strings.Split(b.Raw, "\n") {
 		matches := re.FindAllStringSubmatch(line, -1)[0]
+		message := matches[re.SubexpIndex("Message")]
+		issue := issueFromMessage(current, message)
 		items = append(items,
 			ChainItem{
-				Message: matches[re.SubexpIndex("Message")],
-				Checked: parseChecked(matches[re.SubexpIndex("Checked")]),
-				Raw:     line,
+				ChainIssue: issue,
+				IsCurrent:  issue == current,
+				Message:    message,
+				Checked:    parseChecked(matches[re.SubexpIndex("Checked")]),
+				Raw:        line,
 			},
 		)
 	}
 
 	return
+}
+
+func issueFromMessage(current ChainIssue, s string) ChainIssue {
+	urlRE := regexp.MustCompile(`(?:https?://(?P<host>[^/]+)/(?P<owner>[^/]+)/(?P<repo>[^/]+)/issues/(?P<number>\d+).*)`)
+	numberRE := regexp.MustCompile(`(?:#(?P<number>\d+))`)
+
+	atoi := func(s string) int {
+		i, _ := strconv.Atoi(s)
+		return i
+	}
+
+	s = strings.TrimSpace(s)
+
+	if urlMatch, matched := FindMatchGroups(urlRE, s); matched {
+		return ChainIssue{
+			Repo: repository.Repository{
+				Host:  urlMatch["host"],
+				Owner: urlMatch["owner"],
+				Name:  urlMatch["repo"],
+			},
+			Number: atoi(urlMatch["number"]),
+		}
+	}
+
+	if numberMatch, matched := FindMatchGroups(numberRE, s); matched {
+		return ChainIssue{
+			Repo:   current.Repo,
+			Number: atoi(numberMatch["number"]),
+		}
+	}
+
+	return ChainIssue{}
 }
 
 func findRE(content string, re *regexp.Regexp) []reMatch {
@@ -147,4 +184,18 @@ func findChecklistBlocks(content string) (blocks []block) {
 	}
 
 	return blocks
+}
+
+func FindMatchGroups(re *regexp.Regexp, s string) (map[string]string, bool) {
+	getNamedMatches := func(re *regexp.Regexp, matches []string) map[string]string {
+		result := make(map[string]string)
+		for i, name := range re.SubexpNames() {
+			if i < len(matches) {
+				result[name] = matches[i]
+			}
+		}
+		return result
+	}
+	matches := re.FindStringSubmatch(s)
+	return getNamedMatches(re, matches), len(matches) > 0
 }
