@@ -82,15 +82,18 @@ func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 	}
 
 	for _, line := range strings.Split(b.Raw, "\n") {
-		matches := re.FindAllStringSubmatch(line, -1)[0]
-		message := matches[re.SubexpIndex("Message")]
+		matches, ok := FindMatchGroups(re, line)
+		if !ok {
+			continue
+		}
+		message := matches["Message"]
 		issue := issueFromMessage(current, message)
 		items = append(items,
 			ChainItem{
 				ChainIssue: issue,
 				IsCurrent:  issue == current,
 				Message:    message,
-				Checked:    parseChecked(matches[re.SubexpIndex("Checked")]),
+				Checked:    parseChecked(matches["Checked"]),
 				Raw:        line,
 			},
 		)
