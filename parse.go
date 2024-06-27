@@ -13,6 +13,7 @@ import (
 )
 
 type Chain struct {
+	Header  string
 	Current ChainIssue
 	Items   []ChainItem
 	Raw     string
@@ -35,23 +36,29 @@ func (i ChainIssue) Path() string {
 	return fmt.Sprintf("repos/%s/%s/issues/%d", i.Repo.Owner, i.Repo.Name, i.Number)
 }
 
+func (i ChainIssue) HostPath() string {
+	return fmt.Sprintf("%s/repos/%s/%s/issues/%d", i.Repo.Host, i.Repo.Owner, i.Repo.Name, i.Number)
+}
+
 type reMatch struct {
 	LineNumber int
 	Raw        string
 }
 
 var (
-	indicatorRE = regexp.MustCompile(`(?i)<!--\s*Chain(-)?link\s*-->`)
+	indicatorRE = regexp.MustCompile(`(?i)<!--\s*chainlink\s*-->`)
+	headerRE    = regexp.MustCompile(`(?im)^ {0,3}#{1,6}\s.*`)
+	ErrNotFound = errors.New("no chainlink list found")
 )
 
 func Parse(current ChainIssue, content string) (*Chain, error) {
 	indicators := findRE(content, indicatorRE)
 	if len(indicators) == 0 {
-		return nil, errors.New("no chainlink list found")
+		return nil, ErrNotFound
 	}
 
 	checklists := findChecklistBlocks(content)
-
+	headers := findRE(content, headerRE)
 	for _, ind := range indicators {
 		indLineNumber := ind.LineNumber
 
@@ -66,13 +73,14 @@ func Parse(current ChainIssue, content string) (*Chain, error) {
 
 		checklistForIndicator := checklists[c]
 		return &Chain{
+			Header:  closestHeaderTo(headers, indLineNumber),
 			Current: current,
 			Items:   blockToItems(current, checklistForIndicator),
 			Raw:     checklistForIndicator.Raw,
 		}, nil
 	}
 
-	return nil, errors.New("no chainlink list found")
+	return nil, ErrNotFound
 }
 
 func blockToItems(current ChainIssue, b block) (items []ChainItem) {
@@ -201,4 +209,17 @@ func FindMatchGroups(re *regexp.Regexp, s string) (map[string]string, bool) {
 	}
 	matches := re.FindStringSubmatch(s)
 	return getNamedMatches(re, matches), len(matches) > 0
+}
+
+func closestHeaderTo(headers []reMatch, indLineNumber int) string {
+	if len(headers) == 0 {
+		return ""
+	}
+
+	h := sort.Search(len(headers), func(i int) bool {
+		return headers[i].LineNumber > indLineNumber
+	})
+
+	foundHeader := headers[h-1].Raw
+	return foundHeader
 }
