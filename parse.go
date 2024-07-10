@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"regexp"
 	"sort"
@@ -11,34 +10,6 @@ import (
 
 	"github.com/cli/go-gh/v2/pkg/repository"
 )
-
-type Chain struct {
-	Header  string
-	Current ChainIssue
-	Items   []ChainItem
-	Raw     string
-}
-
-type ChainItem struct {
-	ChainIssue
-	IsCurrent bool
-	Message   string
-	Checked   bool
-	Raw       string
-}
-
-type ChainIssue struct {
-	Repo   repository.Repository
-	Number int
-}
-
-func (i ChainIssue) Path() string {
-	return fmt.Sprintf("repos/%s/%s/issues/%d", i.Repo.Owner, i.Repo.Name, i.Number)
-}
-
-func (i ChainIssue) HostPath() string {
-	return fmt.Sprintf("%s/repos/%s/%s/issues/%d", i.Repo.Host, i.Repo.Owner, i.Repo.Name, i.Number)
-}
 
 type reMatch struct {
 	LineNumber int
@@ -81,6 +52,14 @@ func Parse(current ChainIssue, content string) (*Chain, error) {
 	}
 
 	return nil, ErrNotFound
+}
+
+func FirstIndicator(content string) (*reMatch, error) {
+	indicators := findRE(content, indicatorRE)
+	if len(indicators) == 0 {
+		return nil, ErrNotFound
+	}
+	return &indicators[0], nil
 }
 
 func blockToItems(current ChainIssue, b block) (items []ChainItem) {

@@ -1,49 +1,35 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/cli/go-gh/v2/pkg/api"
-	"github.com/cli/go-gh/v2/pkg/repository"
-)
+import "log/slog"
 
 func main() {
-	fmt.Println("hi world, this is the gh-chainlink extension!")
-	client := must(api.DefaultRESTClient())
+	// Detect repo and issue for current branch
+	client := must(NewGhClient())
 
-	repo := must(repository.Current())
-	current := ChainIssue{
-		Repo:   repo,
+	// Use provided issue ref if provided
+	currentIssue := ChainIssue{
+		Repo:   client.currentRepo,
 		Number: 1,
 	}
-	response := repoResponse{}
-	must0(client.Get(current.Path(), &response))
-	fmt.Println(response.Body)
 
-	chain := must(Parse(current, response.Body))
+	// get chain from ref issue
+	issue := must(client.GetIssue(currentIssue.Number))
+	chain := must(Parse(currentIssue, issue.Body))
 
-	// followedLinks := map[string]Chain{}
+	println(chain.RenderMarkdown())
+
+	// Upsert each linked issue with current chain, skipping current item
 	for _, item := range chain.Items {
-		if item.IsCurrent {
+		if item.HostPath() == currentIssue.HostPath() {
 			continue
 		}
 
-		resp := repoResponse{}
-		must0(client.Get(item.Path(), &resp))
+		slog.Info("upsert chain for issue", "issue", item.Number, "hostPath", item.HostPath())
 
-		fmt.Printf("%+v\n", resp)
+		// itemIssue := must(client.GetIssue(item.Number))
+		// must0(client.UpdateIssueBody(item.Number, itemIssue.Body))
 	}
 }
-
-type repoResponse struct {
-	Title  string
-	Body   string
-	Number int
-	State  string
-}
-
-// For more examples of using go-gh, see:
-// https://github.com/cli/go-gh/blob/trunk/example_gh_test.go
 
 func must[T any](v T, err error) T {
 	if err != nil {
