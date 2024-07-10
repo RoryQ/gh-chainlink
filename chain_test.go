@@ -11,7 +11,7 @@ func TestChainItem_RenderMarkdown(t *testing.T) {
 		ChainIssue ChainIssue
 		IsCurrent  bool
 		Message    string
-		Checked    bool
+		ItemState  ItemState
 		Raw        string
 	}
 	tests := map[string]struct {
@@ -22,7 +22,7 @@ func TestChainItem_RenderMarkdown(t *testing.T) {
 			fields: fields{
 				ChainIssue: TestIssue,
 				Message:    "#1234",
-				Checked:    true,
+				ItemState:  Checked,
 			},
 			want: "- [x] #1234",
 		},
@@ -41,10 +41,10 @@ func TestChainItem_RenderMarkdown(t *testing.T) {
 				ChainIssue: tt.fields.ChainIssue,
 				IsCurrent:  tt.fields.IsCurrent,
 				Message:    tt.fields.Message,
-				Checked:    tt.fields.Checked,
+				ItemState:  tt.fields.ItemState,
 				Raw:        tt.fields.Raw,
 			}
-			assert.Equalf(t, tt.want, i.Render(), "Render()")
+			assert.Equalf(t, tt.want, i.Render(0), "Render()")
 		})
 	}
 }
@@ -57,25 +57,85 @@ func TestChain_RenderMarkdown(t *testing.T) {
 				{
 					IsCurrent: true,
 					Message:   "#12",
-					Checked:   false,
+					ItemState: Unchecked,
 				},
 				{
 					IsCurrent: false,
 					Message:   "#34",
-					Checked:   true,
+					ItemState: Checked,
 				},
 				{
 					IsCurrent: false,
 					Message:   "#56",
-					Checked:   true,
+					ItemState: Checked,
 				},
 			},
 		}
 
 		expected := `<!--chainlink--> 
 - [ ] #12 :arrow_left: This PR 
-- [x] #34  
-- [x] #56 
+- [x] #34 
+- [x] #56
+`
+		assert.Equal(t, expected, chain.RenderMarkdown())
+	})
+
+	t.Run("Numbered List", func(t *testing.T) {
+		chain := Chain{
+			Current: TestIssue,
+			Items: []ChainItem{
+				{
+					IsCurrent: true,
+					Message:   "#12",
+					ItemState: Numbered,
+				},
+				{
+					IsCurrent: false,
+					Message:   "#34",
+					ItemState: Numbered,
+				},
+				{
+					IsCurrent: false,
+					Message:   "#56",
+					ItemState: Numbered,
+				},
+			},
+		}
+
+		expected := `<!--chainlink--> 
+1. #12 :arrow_left: This PR 
+2. #34 
+3. #56
+`
+		assert.Equal(t, expected, chain.RenderMarkdown())
+	})
+
+	t.Run("Bulleted List", func(t *testing.T) {
+		chain := Chain{
+			Current: TestIssue,
+			Items: []ChainItem{
+				{
+					IsCurrent: true,
+					Message:   "#12",
+					ItemState: Bulleted,
+				},
+				{
+					IsCurrent: false,
+					Message:   "#34",
+					ItemState: Bulleted,
+				},
+				{
+					IsCurrent: false,
+					Message:   "#56",
+					ItemState: Bulleted,
+				},
+			},
+		}
+
+		expected := `<!--chainlink--> 
+- #12 :arrow_left: This PR 
+- #34 
+- #56
 `
 		assert.Equal(t, expected, chain.RenderMarkdown())
 	})

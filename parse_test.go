@@ -45,7 +45,7 @@ func TestParse(t *testing.T) {
 						},
 						IsCurrent: true,
 						Message:   "#1",
-						Checked:   false,
+						ItemState: Unchecked,
 						Raw:       "- [ ] #1",
 					},
 					{
@@ -55,7 +55,7 @@ func TestParse(t *testing.T) {
 						},
 						IsCurrent: false,
 						Message:   "#2",
-						Checked:   false,
+						ItemState: Unchecked,
 						Raw:       "- [ ] #2",
 					},
 				},

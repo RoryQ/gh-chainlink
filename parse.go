@@ -64,8 +64,12 @@ func FirstIndicator(content string) (*reMatch, error) {
 
 func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 	re := regexp.MustCompile(`(?i)- (?P<Checked>\[[ x]]) (?P<Message>.*)`)
-	parseChecked := func(s string) bool {
-		return strings.EqualFold(s, "[x]")
+	parseChecked := func(s string) ItemState {
+		isChecked := strings.EqualFold(s, "[x]")
+		if isChecked {
+			return Checked
+		}
+		return Unchecked
 	}
 
 	for _, line := range strings.Split(b.Raw, "\n") {
@@ -80,7 +84,7 @@ func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 				ChainIssue: issue,
 				IsCurrent:  issue == current,
 				Message:    message,
-				Checked:    parseChecked(matches["Checked"]),
+				ItemState:  parseChecked(matches["Checked"]),
 				Raw:        line,
 			},
 		)
