@@ -36,8 +36,12 @@ func (i ChainIssue) HostPath() string {
 	return fmt.Sprintf("%s/repos/%s/%s/issues/%d", i.Repo.Host, i.Repo.Owner, i.Repo.Name, i.Number)
 }
 
-func (i ChainItem) RenderMarkdown() string {
-	return fmt.Sprintf("- [%s] %s", iif(i.Checked, "x", " "), i.Message)
+func (i ChainItem) Render() string {
+	return fmt.Sprintf("- [%s] %s %s",
+		iif(i.Checked, "x", " "),
+		i.Message,
+		iif(i.IsCurrent, ":arrow_left: This PR", ""),
+	)
 }
 
 func iif[T any](cond bool, a, b T) T {
@@ -47,10 +51,22 @@ func iif[T any](cond bool, a, b T) T {
 	return b
 }
 
+func (c Chain) ResetCurrent(to ChainIssue) Chain {
+	newChain := c
+	newChain.Current = to
+	for i := range c.Items {
+		c.Items[i].IsCurrent = false
+		if c.Items[i].ChainIssue.HostPath() == to.HostPath() {
+			c.Items[i].IsCurrent = true
+		}
+	}
+	return newChain
+}
+
 func (c Chain) RenderMarkdown() string {
 	templateString := `<!--chainlink-->
-{{range .Items}}{{.RenderMarkdown}}
-{{end}}
+{{- range .Items }} 
+{{.Render}} {{- end}}
 `
 
 	tmpl := template.Must(template.New("").Parse(templateString))
