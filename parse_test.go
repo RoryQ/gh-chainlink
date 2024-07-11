@@ -10,7 +10,13 @@ import (
 const (
 	ValidTwoLinks = `<!-- chainlink -->
 - [ ] #1
-- [ ] #2`
+- [x] #2 &larr; This PR`
+	NumberedItems = `<!-- chainlink -->
+1. #1
+2. #2 &larr; This PR`
+	BulletedItems = `<!-- chainlink -->
+- #1
+- #2 &larr; This PR`
 )
 
 var (
@@ -54,17 +60,17 @@ func TestParse(t *testing.T) {
 						},
 						IsCurrent: false,
 						Message:   "#2",
-						ItemState: Unchecked,
-						Raw:       "- [ ] #2",
+						ItemState: Checked,
+						Raw:       "- [x] #2 &larr; This PR",
 					},
 				},
-				Raw: "- [ ] #1\n- [ ] #2",
+				Raw: "- [ ] #1\n- [x] #2 &larr; This PR",
 			},
 			errAssert: assert.NoError,
 		},
-		"ValidTwoLinksWithCurrentPrIndicator": {
+		"NumberedItems": {
 			current: TestIssue,
-			content: ValidTwoLinks + " " + CurrentPrIndicator,
+			content: NumberedItems,
 			want: &Chain{
 				Current: TestIssue,
 				Items: []ChainItem{
@@ -76,7 +82,7 @@ func TestParse(t *testing.T) {
 						IsCurrent: true,
 						Message:   "#1",
 						ItemState: Unchecked,
-						Raw:       "- [ ] #1",
+						Raw:       "1. #1",
 					},
 					{
 						ChainIssue: ChainIssue{
@@ -86,10 +92,41 @@ func TestParse(t *testing.T) {
 						IsCurrent: false,
 						Message:   "#2",
 						ItemState: Unchecked,
-						Raw:       "- [ ] #2 &larr; This PR",
+						Raw:       "2. #2 &larr; This PR",
 					},
 				},
-				Raw: "- [ ] #1\n- [ ] #2 &larr; This PR",
+				Raw: "1. #1\n2. #2 &larr; This PR",
+			},
+			errAssert: assert.NoError,
+		},
+		"BulletedItems": {
+			current: TestIssue,
+			content: BulletedItems,
+			want: &Chain{
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Unchecked,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Unchecked,
+						Raw:       "- #2 &larr; This PR",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; This PR",
 			},
 			errAssert: assert.NoError,
 		},

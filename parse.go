@@ -19,6 +19,7 @@ type reMatch struct {
 var (
 	indicatorRE = regexp.MustCompile(`(?i)<!--\s*chainlink\s*-->`)
 	headerRE    = regexp.MustCompile(`(?im)^ {0,3}#{1,6}\s.*`)
+	itemRE      = regexp.MustCompile(`(?i)^\s{0,4}(- (?P<Checked>\[[ x]])?|(?P<Numbered>\d+)[.] )(:? *)(?P<Message>.*)`)
 	ErrNotFound = errors.New("no chainlink list found")
 )
 
@@ -54,43 +55,42 @@ func Parse(current ChainIssue, content string) (*Chain, error) {
 	return nil, ErrNotFound
 }
 
-func FirstIndicator(content string) (*reMatch, error) {
-	indicators := findRE(content, indicatorRE)
-	if len(indicators) == 0 {
-		return nil, ErrNotFound
-	}
-	return &indicators[0], nil
-}
-
 func blockToItems(current ChainIssue, b block) (items []ChainItem) {
-	re := regexp.MustCompile(`(?i)- (?P<Checked>\[[ x]]) (?P<Message>.*)`)
-	parseChecked := func(s string) ItemState {
-		isChecked := strings.EqualFold(s, "[x]")
-		if isChecked {
-			return Checked
-		}
-		return Unchecked
-	}
-
 	for _, line := range strings.Split(b.Raw, "\n") {
-		matches, ok := FindMatchGroups(re, line)
+		matches, ok := FindMatchGroups(itemRE, line)
 		if !ok {
 			continue
 		}
-		message := strings.ReplaceAll(matches["Message"], CurrentPrIndicator, "")
+		message := strings.TrimSuffix(matches["Message"], " "+CurrentPrIndicator)
 		issue := issueFromMessage(current, message)
 		items = append(items,
 			ChainItem{
 				ChainIssue: issue,
 				IsCurrent:  issue == current,
-				Message:    strings.TrimSpace(message),
-				ItemState:  parseChecked(matches["Checked"]),
+				Message:    message,
+				ItemState:  parseItemState(matches),
 				Raw:        line,
 			},
 		)
 	}
 
 	return
+}
+
+func parseItemState(s map[string]string) ItemState {
+	if checked, ok := s["Checked"]; ok {
+		isChecked := strings.EqualFold(checked, "[x]")
+		if isChecked {
+			return Checked
+		}
+		return Unchecked
+	}
+
+	if _, ok := s["Numbered"]; ok {
+		return Numbered
+	}
+
+	return Bulleted
 }
 
 func issueFromMessage(current ChainIssue, s string) ChainIssue {
@@ -145,9 +145,7 @@ type block struct {
 }
 
 func findChecklistBlocks(content string) (blocks []block) {
-	re := regexp.MustCompile(`(?i)- \[[ x]\] .*`)
-
-	matches := findRE(content, re)
+	matches := findRE(content, itemRE)
 
 	b := block{}
 	for _, m := range matches {
