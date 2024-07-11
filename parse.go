@@ -61,7 +61,7 @@ func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 		if !ok {
 			continue
 		}
-		message := strings.TrimSuffix(matches["Message"], " "+CurrentPrIndicator)
+		message := parseMessage(matches)
 		issue := issueFromMessage(current, message)
 		items = append(items,
 			ChainItem{
@@ -91,6 +91,10 @@ func parseItemState(s map[string]string) ItemState {
 	}
 
 	return Bulleted
+}
+
+func parseMessage(s map[string]string) string {
+	return strings.TrimSuffix(strings.TrimSpace(s["Message"]), CurrentPrIndicator)
 }
 
 func issueFromMessage(current ChainIssue, s string) ChainIssue {
