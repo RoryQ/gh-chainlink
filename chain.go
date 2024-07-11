@@ -25,6 +25,8 @@ type ChainItem struct {
 	Raw       string
 }
 
+const CurrentPrIndicator = "&larr; This PR"
+
 type ItemState int
 
 const (
@@ -51,7 +53,7 @@ func (i ChainItem) Render(pointIndex int) string {
 	rendered := fmt.Sprintln(
 		i.renderListPoint(pointIndex),
 		i.Message,
-		iif(i.IsCurrent, ":arrow_left: This PR", ""))
+		iif(i.IsCurrent, CurrentPrIndicator, ""))
 	return strings.TrimRight(rendered, " \n")
 }
 

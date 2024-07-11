@@ -77,13 +77,13 @@ func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 		if !ok {
 			continue
 		}
-		message := matches["Message"]
+		message := strings.ReplaceAll(matches["Message"], CurrentPrIndicator, "")
 		issue := issueFromMessage(current, message)
 		items = append(items,
 			ChainItem{
 				ChainIssue: issue,
 				IsCurrent:  issue == current,
-				Message:    message,
+				Message:    strings.TrimSpace(message),
 				ItemState:  parseChecked(matches["Checked"]),
 				Raw:        line,
 			},

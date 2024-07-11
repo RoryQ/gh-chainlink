@@ -10,8 +10,7 @@ import (
 const (
 	ValidTwoLinks = `<!-- chainlink -->
 - [ ] #1
-- [ ] #2
-`
+- [ ] #2`
 )
 
 var (
@@ -60,6 +59,37 @@ func TestParse(t *testing.T) {
 					},
 				},
 				Raw: "- [ ] #1\n- [ ] #2",
+			},
+			errAssert: assert.NoError,
+		},
+		"ValidTwoLinksWithCurrentPrIndicator": {
+			current: TestIssue,
+			content: ValidTwoLinks + " " + CurrentPrIndicator,
+			want: &Chain{
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Unchecked,
+						Raw:       "- [ ] #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Unchecked,
+						Raw:       "- [ ] #2 &larr; This PR",
+					},
+				},
+				Raw: "- [ ] #1\n- [ ] #2 &larr; This PR",
 			},
 			errAssert: assert.NoError,
 		},
