@@ -91,7 +91,7 @@ func (c Chain) ResetCurrent(to ChainIssue) Chain {
 }
 
 func (c Chain) RenderMarkdown() string {
-	templateString := `<!--chainlink-->
+	templateString := `<!-- chainlink generated from {{.Current.HostPath}} -->
 {{- range $i, $v :=  .Items }} 
 {{$v.Render $i }} {{- end}}
 `

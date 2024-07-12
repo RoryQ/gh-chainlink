@@ -72,7 +72,7 @@ func TestChain_RenderMarkdown(t *testing.T) {
 			},
 		}
 
-		expected := `<!--chainlink--> 
+		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
 - [ ] #12 &larr; This PR 
 - [x] #34 
 - [x] #56
@@ -102,7 +102,7 @@ func TestChain_RenderMarkdown(t *testing.T) {
 			},
 		}
 
-		expected := `<!--chainlink--> 
+		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
 1. #12 &larr; This PR 
 2. #34 
 3. #56
@@ -132,7 +132,7 @@ func TestChain_RenderMarkdown(t *testing.T) {
 			},
 		}
 
-		expected := `<!--chainlink--> 
+		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
 - #12 &larr; This PR 
 - #34 
 - #56
