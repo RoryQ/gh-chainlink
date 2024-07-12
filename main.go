@@ -28,10 +28,10 @@ func main() {
 			continue
 		}
 
-		body := ReplaceChain(itemIssue.Body, issueChainString)
+		updatedBody := ReplaceChain(itemIssue.Body, issueChainString)
 
-		if body != itemIssue.Body {
-			err := client.UpdateIssueBody(item.Number, itemIssue.Body)
+		if updatedBody != itemIssue.Body {
+			err := client.UpdateIssueBody(item.Number, updatedBody)
 			if err != nil {
 				slog.Error("Error updating item", "number", item.Number, "error", err)
 			}

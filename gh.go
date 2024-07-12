@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/cli/go-gh/v2/pkg/api"
@@ -67,7 +66,6 @@ func (c *GhClient) UpdateIssueBody(num int, body string) error {
 		return err
 	}
 	err = c.RESTClient.Patch(apiPath, request, &response)
-	slog.Info("patch response", "response", response, "error", err)
 	return err
 }
 
