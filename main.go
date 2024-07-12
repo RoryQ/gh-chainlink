@@ -1,26 +1,53 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/cli/go-gh/v2/pkg/api"
-)
+import "log/slog"
 
 func main() {
-	fmt.Println("hi world, this is the gh-chainlink extension!")
-	client, err := api.DefaultRESTClient()
-	if err != nil {
-		fmt.Println(err)
-		return
+	// Detect repo and issue for current branch
+	client := must(NewGhClient())
+
+	// Use provided issue ref if provided
+	currentIssue := ChainIssue{
+		Repo:   client.currentRepo,
+		Number: 1,
 	}
-	response := struct {Login string}{}
-	err = client.Get("user", &response)
-	if err != nil {
-		fmt.Println(err)
-		return
+
+	// get chain from ref issue
+	issue := must(client.GetIssue(currentIssue.Number))
+	chain := must(Parse(currentIssue, issue.Body))
+
+	// Upsert each linked issue with current chain, skipping current item
+	for i, item := range chain.Items {
+		chain.Items[i].IsPullRequest = client.IsPull(item.Number)
+
+		issueChainString := chain.ResetCurrent(item.ChainIssue).RenderMarkdown()
+
+		itemIssue, err := client.GetIssue(item.Number)
+		if err != nil {
+			slog.Error("Error retrieving item", "number", item.Number, "error", err)
+			continue
+		}
+
+		body := ReplaceChain(itemIssue.Body, issueChainString)
+
+		if body != itemIssue.Body {
+			err := client.UpdateIssueBody(item.Number, itemIssue.Body)
+			if err != nil {
+				slog.Error("Error updating item", "number", item.Number, "error", err)
+			}
+		}
 	}
-	fmt.Printf("running as %s\n", response.Login)
 }
 
-// For more examples of using go-gh, see:
-// https://github.com/cli/go-gh/blob/trunk/example_gh_test.go
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func must0(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
