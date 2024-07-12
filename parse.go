@@ -17,7 +17,7 @@ type reMatch struct {
 }
 
 var (
-	indicatorRE = regexp.MustCompile(`(?i)<!--\s*chainlink\s*-->`)
+	indicatorRE = regexp.MustCompile(`(?i)<!--\s*chainlink(?:\s*| generated from.*)-->`)
 	headerRE    = regexp.MustCompile(`(?im)^ {0,3}#{1,6}\s.*`)
 	itemRE      = regexp.MustCompile(`(?i)^\s{0,4}(- (?P<Checked>\[[ x]])?|(?P<Numbered>\d+)[.] )(:? *)(?P<Message>.*)`)
 	ErrNotFound = errors.New("no chainlink list found")
@@ -46,6 +46,7 @@ func Parse(current ChainIssue, content string) (*Chain, error) {
 		checklistForIndicator := checklists[c]
 		return &Chain{
 			Header:  closestHeaderTo(headers, indLineNumber),
+			Source:  current,
 			Current: current,
 			Items:   blockToItems(current, checklistForIndicator),
 			Raw:     checklistForIndicator.Raw,
@@ -94,7 +95,7 @@ func parseItemState(s map[string]string) ItemState {
 }
 
 func parseMessage(s map[string]string) string {
-	return strings.TrimSuffix(strings.TrimSpace(s["Message"]), CurrentPrIndicator)
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(s["Message"]), CurrentPrIndicator))
 }
 
 func issueFromMessage(current ChainIssue, s string) ChainIssue {

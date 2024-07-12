@@ -12,6 +12,7 @@ import (
 
 type Chain struct {
 	Header  string
+	Source  ChainIssue
 	Current ChainIssue
 	Items   []ChainItem
 	Raw     string
@@ -91,7 +92,7 @@ func (c Chain) ResetCurrent(to ChainIssue) Chain {
 }
 
 func (c Chain) RenderMarkdown() string {
-	templateString := `<!-- chainlink generated from {{.Current.HostPath}} -->
+	templateString := `<!-- chainlink generated from {{.Source.HostPath}} -->
 {{- range $i, $v :=  .Items }} 
 {{$v.Render $i }} {{- end}}
 `

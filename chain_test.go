@@ -52,6 +52,7 @@ func TestChainItem_RenderMarkdown(t *testing.T) {
 func TestChain_RenderMarkdown(t *testing.T) {
 	t.Run("Checklist", func(t *testing.T) {
 		chain := Chain{
+			Source:  TestIssue,
 			Current: TestIssue,
 			Items: []ChainItem{
 				{
@@ -82,6 +83,7 @@ func TestChain_RenderMarkdown(t *testing.T) {
 
 	t.Run("Numbered List", func(t *testing.T) {
 		chain := Chain{
+			Source:  TestIssue,
 			Current: TestIssue,
 			Items: []ChainItem{
 				{
@@ -112,6 +114,7 @@ func TestChain_RenderMarkdown(t *testing.T) {
 
 	t.Run("Bulleted List", func(t *testing.T) {
 		chain := Chain{
+			Source:  TestIssue,
 			Current: TestIssue,
 			Items: []ChainItem{
 				{

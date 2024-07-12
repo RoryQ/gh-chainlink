@@ -41,6 +41,7 @@ func TestParse(t *testing.T) {
 			current: TestIssue,
 			content: ValidTwoLinks,
 			want: &Chain{
+				Source:  TestIssue,
 				Current: TestIssue,
 				Items: []ChainItem{
 					{
@@ -72,6 +73,7 @@ func TestParse(t *testing.T) {
 			current: TestIssue,
 			content: NumberedItems,
 			want: &Chain{
+				Source:  TestIssue,
 				Current: TestIssue,
 				Items: []ChainItem{
 					{
@@ -103,6 +105,7 @@ func TestParse(t *testing.T) {
 			current: TestIssue,
 			content: BulletedItems,
 			want: &Chain{
+				Source:  TestIssue,
 				Current: TestIssue,
 				Items: []ChainItem{
 					{
