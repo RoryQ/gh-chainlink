@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/cli/go-gh/v2/pkg/api"
 	"github.com/cli/go-gh/v2/pkg/repository"
@@ -33,6 +35,7 @@ type IssueResponse struct {
 	Body   string
 	Number int
 	State  string
+	Url    string
 }
 
 func (c *GhClient) GetIssue(num int) (IssueResponse, error) {
@@ -43,6 +46,17 @@ func (c *GhClient) GetIssue(num int) (IssueResponse, error) {
 		return IssueResponse{}, err
 	}
 	return response, nil
+}
+
+func (c *GhClient) IsPull(num int) bool {
+	apiPath := fmt.Sprintf("repos/%s/%s/pulls/%d", c.currentRepo.Owner, c.currentRepo.Name, num)
+	response := IssueResponse{}
+	err := c.RESTClient.Get(apiPath, &response)
+	he := &api.HTTPError{}
+	if errors.As(err, &he) {
+		return he.StatusCode != http.StatusNotFound
+	}
+	return true
 }
 
 func (c *GhClient) UpdateIssueBody(num int, body string) error {

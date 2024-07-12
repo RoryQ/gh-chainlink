@@ -26,7 +26,10 @@ type ChainItem struct {
 	Raw       string
 }
 
-const CurrentPrIndicator = "&larr; This PR"
+const (
+	CurrentPrIndicator    = "&larr; This PR"
+	CurrentIssueIndicator = "&larr; This Issue"
+)
 
 type ItemState int
 
@@ -38,8 +41,9 @@ const (
 )
 
 type ChainIssue struct {
-	Repo   repository.Repository
-	Number int
+	Repo          repository.Repository
+	Number        int
+	IsPullRequest bool
 }
 
 func (i ChainIssue) Path() string {
@@ -51,10 +55,11 @@ func (i ChainIssue) HostPath() string {
 }
 
 func (i ChainItem) Render(pointIndex int) string {
+	currentIndicator := iif(i.IsPullRequest, CurrentPrIndicator, CurrentIssueIndicator)
 	rendered := fmt.Sprintln(
 		i.renderListPoint(pointIndex),
 		i.Message,
-		iif(i.IsCurrent, CurrentPrIndicator, ""))
+		iif(i.IsCurrent, currentIndicator, ""))
 	return strings.TrimRight(rendered, " \n")
 }
 
