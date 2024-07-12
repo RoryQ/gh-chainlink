@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -56,6 +57,61 @@ func Parse(current ChainIssue, content string) (*Chain, error) {
 	return nil, ErrNotFound
 }
 
+func FindMatchGroups(re *regexp.Regexp, s string) (map[string]string, bool) {
+	getNamedMatches := func(re *regexp.Regexp, matches []string) map[string]string {
+		result := make(map[string]string)
+		for i, name := range re.SubexpNames() {
+			if i < len(matches) {
+				result[name] = matches[i]
+			}
+		}
+		return result
+	}
+	matches := re.FindStringSubmatch(s)
+	return getNamedMatches(re, matches), len(matches) > 0
+}
+
+func ReplaceChain(body, chain string) string {
+	indicators := findRE(body, indicatorRE)
+	if len(indicators) == 0 {
+		// not found so append the chain to the current body
+		return body + "\n" + chain
+	}
+
+	checklists := findChecklistBlocks(body)
+	for _, ind := range indicators {
+		indLineNumber := ind.LineNumber
+
+		c := sort.Search(len(checklists), func(i int) bool {
+			return checklists[i].LineNumbers[0] > indLineNumber
+		})
+
+		if c >= len(checklists) {
+			slog.Warn("no list found for indicator", "lineNumber", indLineNumber)
+			continue
+		}
+
+		checklistForIndicator := checklists[c]
+		body = removeLines(body, indLineNumber, checklistForIndicator.LineNumbers[len(checklistForIndicator.LineNumbers)-1])
+		return insertLinesAt(body, indLineNumber, chain)
+	}
+
+	return strings.ReplaceAll(body, indicators[0].Raw, chain)
+}
+
+func removeLines(s string, start, end int) string {
+	lines := strings.Split(s, "\n")
+	lines = append(lines[:start], lines[end:]...)
+	return strings.Join(lines, "\n")
+}
+
+func insertLinesAt(s string, at int, with string) string {
+	lines := strings.Split(s, "\n")
+	withLines := strings.Split(with, "\n")
+	lines = slices.Concat(lines[:at], withLines, lines[at+1:])
+	return strings.Join(lines, "\n")
+}
+
 func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 	for _, line := range strings.Split(b.Raw, "\n") {
 		matches, ok := FindMatchGroups(itemRE, line)
@@ -79,7 +135,7 @@ func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 }
 
 func parseItemState(s map[string]string) ItemState {
-	if checked, ok := s["Checked"]; ok {
+	if checked, ok := s["Checked"]; ok && checked != "" {
 		isChecked := strings.EqualFold(checked, "[x]")
 		if isChecked {
 			return Checked
@@ -87,7 +143,7 @@ func parseItemState(s map[string]string) ItemState {
 		return Unchecked
 	}
 
-	if _, ok := s["Numbered"]; ok {
+	if numbered, ok := s["Numbered"]; ok && numbered != "" {
 		return Numbered
 	}
 
@@ -181,20 +237,6 @@ func findChecklistBlocks(content string) (blocks []block) {
 	}
 
 	return blocks
-}
-
-func FindMatchGroups(re *regexp.Regexp, s string) (map[string]string, bool) {
-	getNamedMatches := func(re *regexp.Regexp, matches []string) map[string]string {
-		result := make(map[string]string)
-		for i, name := range re.SubexpNames() {
-			if i < len(matches) {
-				result[name] = matches[i]
-			}
-		}
-		return result
-	}
-	matches := re.FindStringSubmatch(s)
-	return getNamedMatches(re, matches), len(matches) > 0
 }
 
 func closestHeaderTo(headers []reMatch, indLineNumber int) string {

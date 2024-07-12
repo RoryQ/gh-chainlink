@@ -1,5 +1,7 @@
 package main
 
+import "log/slog"
+
 func main() {
 	// Detect repo and issue for current branch
 	client := must(NewGhClient())
@@ -18,10 +20,22 @@ func main() {
 	for i, item := range chain.Items {
 		chain.Items[i].IsPullRequest = client.IsPull(item.Number)
 
-		println(chain.ResetCurrent(item.ChainIssue).RenderMarkdown())
+		issueChainString := chain.ResetCurrent(item.ChainIssue).RenderMarkdown()
 
-		// itemIssue := must(client.GetIssue(item.Number))
-		// must0(client.UpdateIssueBody(item.Number, itemIssue.Body))
+		itemIssue, err := client.GetIssue(item.Number)
+		if err != nil {
+			slog.Error("Error retrieving item", "number", item.Number, "error", err)
+			continue
+		}
+
+		body := ReplaceChain(itemIssue.Body, issueChainString)
+
+		if body != itemIssue.Body {
+			err := client.UpdateIssueBody(item.Number, itemIssue.Body)
+			if err != nil {
+				slog.Error("Error updating item", "number", item.Number, "error", err)
+			}
+		}
 	}
 }
 

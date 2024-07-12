@@ -188,3 +188,32 @@ func Test_issueFromMessage(t *testing.T) {
 		})
 	}
 }
+
+func TestReplaceChain(t *testing.T) {
+	tests := map[string]struct {
+		body  string
+		chain string
+		want  string
+	}{
+		"BodyHasChainlink": {
+			body:  "<!--chainlink-->\n\n1. #1",
+			chain: "<!--chainlink-->\n1. #1 &larr; This PR",
+			want:  "<!--chainlink-->\n1. #1 &larr; This PR",
+		},
+		"BodyHasIndicatorOnly": {
+			body:  "<!--chainlink-->\n\nSome Text.",
+			chain: "<!--chainlink-->\n1. #1 &larr; This PR",
+			want:  "<!--chainlink-->\n1. #1 &larr; This PR\n\nSome Text.",
+		},
+		"NoIndicator": {
+			body:  "Some Text.",
+			chain: "<!--chainlink-->\n1. #1 &larr; This PR",
+			want:  "Some Text.\n<!--chainlink-->\n1. #1 &larr; This PR",
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, ReplaceChain(tt.body, tt.chain), "ReplaceChain(%v, %v)", tt.body, tt.chain)
+		})
+	}
+}
