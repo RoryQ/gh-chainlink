@@ -27,8 +27,7 @@ type ChainItem struct {
 }
 
 const (
-	CurrentPrIndicator    = "&larr; This PR"
-	CurrentIssueIndicator = "&larr; This Issue"
+	CurrentIndicator = "&larr; you are here"
 )
 
 type ItemState int
@@ -55,11 +54,10 @@ func (i ChainIssue) HostPath() string {
 }
 
 func (i ChainItem) Render(pointIndex int) string {
-	currentIndicator := iif(i.IsPullRequest, CurrentPrIndicator, CurrentIssueIndicator)
 	rendered := fmt.Sprintln(
 		i.renderListPoint(pointIndex),
 		i.Message,
-		iif(i.IsCurrent, currentIndicator, ""))
+		iif(i.IsCurrent, CurrentIndicator, ""))
 	return strings.TrimRight(rendered, " \n")
 }
 

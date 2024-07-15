@@ -32,7 +32,7 @@ func TestChainItem_RenderMarkdown(t *testing.T) {
 				Message:    "#123",
 				IsCurrent:  true,
 			},
-			want: "- [ ] #123 " + CurrentPrIndicator,
+			want: "- [ ] #123 " + CurrentIndicator,
 		},
 	}
 	for name, tt := range tests {
@@ -74,7 +74,7 @@ func TestChain_RenderMarkdown(t *testing.T) {
 		}
 
 		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
-- [ ] #12 &larr; This PR 
+- [ ] #12 &larr; you are here 
 - [x] #34 
 - [x] #56
 `
@@ -105,7 +105,7 @@ func TestChain_RenderMarkdown(t *testing.T) {
 		}
 
 		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
-1. #12 &larr; This PR 
+1. #12 &larr; you are here 
 2. #34 
 3. #56
 `
@@ -136,7 +136,7 @@ func TestChain_RenderMarkdown(t *testing.T) {
 		}
 
 		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
-- #12 &larr; This PR 
+- #12 &larr; you are here 
 - #34 
 - #56
 `

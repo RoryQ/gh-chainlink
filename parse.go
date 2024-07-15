@@ -151,8 +151,13 @@ func parseItemState(s map[string]string) ItemState {
 }
 
 func parseMessage(s map[string]string) string {
-	return strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(s["Message"]), CurrentPrIndicator))
+	trimIndicator := func(str string) string {
+		return strings.TrimSuffix(str, CurrentIndicator)
+	}
+	return strings.TrimSpace(trimIndicator(strings.TrimSpace(s["Message"])))
 }
+
+type stringMutFunc = func(string) string
 
 func issueFromMessage(current ChainIssue, s string) ChainIssue {
 	urlRE := regexp.MustCompile(`(?:https?://(?P<host>[^/]+)/(?P<owner>[^/]+)/(?P<repo>[^/]+)/issues/(?P<number>\d+).*)`)

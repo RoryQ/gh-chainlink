@@ -10,13 +10,13 @@ import (
 const (
 	ValidTwoLinks = `<!-- chainlink -->
 - [ ] #1
-- [x] #2 &larr; This PR`
+- [x] #2 &larr; you are here`
 	NumberedItems = `<!-- chainlink -->
 1. #1
-2. #2 &larr; This PR`
+2. #2 &larr; you are here`
 	BulletedItems = `<!-- chainlink -->
 - #1
-- #2 &larr; This PR`
+- #2 &larr; you are here`
 )
 
 var (
@@ -62,10 +62,10 @@ func TestParse(t *testing.T) {
 						IsCurrent: false,
 						Message:   "#2",
 						ItemState: Checked,
-						Raw:       "- [x] #2 &larr; This PR",
+						Raw:       "- [x] #2 &larr; you are here",
 					},
 				},
-				Raw: "- [ ] #1\n- [x] #2 &larr; This PR",
+				Raw: "- [ ] #1\n- [x] #2 &larr; you are here",
 			},
 			errAssert: assert.NoError,
 		},
@@ -83,7 +83,7 @@ func TestParse(t *testing.T) {
 						},
 						IsCurrent: true,
 						Message:   "#1",
-						ItemState: Unchecked,
+						ItemState: Numbered,
 						Raw:       "1. #1",
 					},
 					{
@@ -93,11 +93,11 @@ func TestParse(t *testing.T) {
 						},
 						IsCurrent: false,
 						Message:   "#2",
-						ItemState: Unchecked,
-						Raw:       "2. #2 &larr; This PR",
+						ItemState: Numbered,
+						Raw:       "2. #2 &larr; you are here",
 					},
 				},
-				Raw: "1. #1\n2. #2 &larr; This PR",
+				Raw: "1. #1\n2. #2 &larr; you are here",
 			},
 			errAssert: assert.NoError,
 		},
@@ -115,7 +115,7 @@ func TestParse(t *testing.T) {
 						},
 						IsCurrent: true,
 						Message:   "#1",
-						ItemState: Unchecked,
+						ItemState: Bulleted,
 						Raw:       "- #1",
 					},
 					{
@@ -125,11 +125,11 @@ func TestParse(t *testing.T) {
 						},
 						IsCurrent: false,
 						Message:   "#2",
-						ItemState: Unchecked,
-						Raw:       "- #2 &larr; This PR",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
 					},
 				},
-				Raw: "- #1\n- #2 &larr; This PR",
+				Raw: "- #1\n- #2 &larr; you are here",
 			},
 			errAssert: assert.NoError,
 		},
@@ -197,18 +197,18 @@ func TestReplaceChain(t *testing.T) {
 	}{
 		"BodyHasChainlink": {
 			body:  "<!--chainlink-->\n\n1. #1",
-			chain: "<!--chainlink-->\n1. #1 &larr; This PR",
-			want:  "<!--chainlink-->\n1. #1 &larr; This PR",
+			chain: "<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "<!--chainlink-->\n1. #1 &larr; you are here",
 		},
 		"BodyHasIndicatorOnly": {
 			body:  "<!--chainlink-->\n\nSome Text.",
-			chain: "<!--chainlink-->\n1. #1 &larr; This PR",
-			want:  "<!--chainlink-->\n1. #1 &larr; This PR\n\nSome Text.",
+			chain: "<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "<!--chainlink-->\n1. #1 &larr; you are here\n\nSome Text.",
 		},
 		"NoIndicator": {
 			body:  "Some Text.",
-			chain: "<!--chainlink-->\n1. #1 &larr; This PR",
-			want:  "Some Text.\n<!--chainlink-->\n1. #1 &larr; This PR",
+			chain: "<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "Some Text.\n<!--chainlink-->\n1. #1 &larr; you are here",
 		},
 	}
 	for name, tt := range tests {
