@@ -184,7 +184,7 @@ func Test_issueFromMessage(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, tt.want, issueFromMessage(tt.current, tt.message))
+			assert.Equal(t, tt.want, issueFromMessage(tt.current.Repo, tt.message))
 		})
 	}
 }
