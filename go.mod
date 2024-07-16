@@ -2,8 +2,6 @@ module github.com/RoryQ/gh-chainlink
 
 go 1.22
 
-toolchain go1.22.1
-
 require (
 	github.com/cli/go-gh/v2 v2.9.0
 	github.com/fatih/color v1.14.1
