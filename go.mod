@@ -1,10 +1,10 @@
 module github.com/RoryQ/gh-chainlink
 
-go 1.22
+go 1.21
 
 require (
 	github.com/cli/go-gh/v2 v2.9.0
-	github.com/fatih/color v1.14.1
+	github.com/fatih/color v1.17.0
 	github.com/stretchr/testify v1.9.0
 )
 
