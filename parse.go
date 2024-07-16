@@ -108,7 +108,7 @@ func removeLines(s string, start, end int) string {
 func insertLinesAt(s string, at int, with string) string {
 	lines := strings.Split(s, "\n")
 	withLines := strings.Split(with, "\n")
-	lines = slices.Concat(lines[:at], withLines, lines[at+1:])
+	lines = slicesConcat(lines[:at], withLines, lines[at+1:])
 	return strings.Join(lines, "\n")
 }
 
@@ -253,4 +253,20 @@ func closestHeaderTo(headers []reMatch, indLineNumber int) string {
 
 	foundHeader := headers[h-1].Raw
 	return foundHeader
+}
+
+// Concat returns a new slice concatenating the passed in slices.
+func slicesConcat[S ~[]E, E any](ss ...S) S {
+	size := 0
+	for _, s := range ss {
+		size += len(s)
+		if size < 0 {
+			panic("len out of range")
+		}
+	}
+	newslice := slices.Grow[S](nil, size)
+	for _, s := range ss {
+		newslice = append(newslice, s...)
+	}
+	return newslice
 }
