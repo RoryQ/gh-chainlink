@@ -119,7 +119,7 @@ func blockToItems(current ChainIssue, b block) (items []ChainItem) {
 			continue
 		}
 		message := parseMessage(matches)
-		issue := issueFromMessage(current, message)
+		issue := issueFromMessage(current.Repo, message)
 		items = append(items,
 			ChainItem{
 				ChainIssue: issue,
@@ -157,9 +157,7 @@ func parseMessage(s map[string]string) string {
 	return strings.TrimSpace(trimIndicator(strings.TrimSpace(s["Message"])))
 }
 
-type stringMutFunc = func(string) string
-
-func issueFromMessage(current ChainIssue, s string) ChainIssue {
+func issueFromMessage(currentRepo repository.Repository, s string) ChainIssue {
 	urlRE := regexp.MustCompile(`(?:https?://(?P<host>[^/]+)/(?P<owner>[^/]+)/(?P<repo>[^/]+)/issues/(?P<number>\d+).*)`)
 	numberRE := regexp.MustCompile(`(?:#(?P<number>\d+))`)
 
@@ -183,7 +181,7 @@ func issueFromMessage(current ChainIssue, s string) ChainIssue {
 
 	if numberMatch, matched := FindMatchGroups(numberRE, s); matched {
 		return ChainIssue{
-			Repo:   current.Repo,
+			Repo:   currentRepo,
 			Number: atoi(numberMatch["number"]),
 		}
 	}
