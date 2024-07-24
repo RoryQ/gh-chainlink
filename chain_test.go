@@ -142,4 +142,37 @@ func TestChain_RenderMarkdown(t *testing.T) {
 `
 		assert.Equal(t, expected, chain.RenderMarkdown())
 	})
+
+	t.Run("List With Header", func(t *testing.T) {
+		chain := Chain{
+			Header:  "### PR Chain",
+			Source:  TestIssue,
+			Current: TestIssue,
+			Items: []ChainItem{
+				{
+					IsCurrent: true,
+					Message:   "#12",
+					ItemState: Bulleted,
+				},
+				{
+					IsCurrent: false,
+					Message:   "#34",
+					ItemState: Bulleted,
+				},
+				{
+					IsCurrent: false,
+					Message:   "#56",
+					ItemState: Bulleted,
+				},
+			},
+		}
+
+		expected := `### PR Chain
+<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
+- #12 &larr; you are here 
+- #34 
+- #56
+`
+		assert.Equal(t, expected, chain.RenderMarkdown())
+	})
 }

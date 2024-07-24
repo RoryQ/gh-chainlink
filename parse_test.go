@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/cli/go-gh/v2/pkg/repository"
@@ -104,6 +105,71 @@ func TestParse(t *testing.T) {
 		"BulletedItems": {
 			current: TestIssue,
 			content: BulletedItems,
+			want: &Chain{
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
+		"WithHeader": {
+			current: TestIssue,
+			content: fmt.Sprintf("### PR Chain \n%s", BulletedItems),
+			want: &Chain{
+				Header:  "### PR Chain ",
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
+		"NotSupportedHeader": {
+			current: TestIssue,
+			content: fmt.Sprintf("### PR Chain \n some text inbetween \n%s", BulletedItems),
 			want: &Chain{
 				Source:  TestIssue,
 				Current: TestIssue,

@@ -46,7 +46,7 @@ func Parse(current ChainIssue, content string) (*Chain, error) {
 
 		checklistForIndicator := checklists[c]
 		return &Chain{
-			Header:  closestHeaderTo(headers, indLineNumber),
+			Header:  closestValidHeaderTo(content, headers, indLineNumber),
 			Source:  current,
 			Current: current,
 			Items:   blockToItems(current, checklistForIndicator),
@@ -242,7 +242,7 @@ func findChecklistBlocks(content string) (blocks []block) {
 	return blocks
 }
 
-func closestHeaderTo(headers []reMatch, indLineNumber int) string {
+func closestValidHeaderTo(content string, headers []reMatch, indLineNumber int) string {
 	if len(headers) == 0 {
 		return ""
 	}
@@ -250,9 +250,16 @@ func closestHeaderTo(headers []reMatch, indLineNumber int) string {
 	h := sort.Search(len(headers), func(i int) bool {
 		return headers[i].LineNumber > indLineNumber
 	})
+	closest := headers[h-1]
 
-	foundHeader := headers[h-1].Raw
-	return foundHeader
+	lines := strings.Split(content, "\n")
+	for i := closest.LineNumber + 1; i < indLineNumber; i++ {
+		// check all lines between header and indicator are empty
+		if len(strings.TrimSpace(lines[i])) > 0 {
+			return ""
+		}
+	}
+	return closest.Raw
 }
 
 // Concat returns a new slice concatenating the passed in slices.
