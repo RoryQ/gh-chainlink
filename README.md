@@ -54,7 +54,7 @@ gh chainlink 100
 Alternatively you can provide a full url
 
 ```
-gh chainlink "github.com/roryq/gh-chainlnk/pull/100"
+gh chainlink "github.com/roryq/gh-chainlink/pull/100"
 ```
 
 #### See the results
@@ -66,7 +66,7 @@ Here is my first PR for the issue.
 
 ## PR Chain
 <!--chainlink-->
-1. #100 &larr; you are here
+1. #100 ← you are here
 2. #101
 3. #102
 ```
@@ -78,7 +78,7 @@ Here is my second PR for the issue.
 ## PR Chain
 <!--chainlink-->
 1. #100
-2. #101  &larr; you are here
+2. #101 ← you are here
 3. #102
 ```
 
@@ -90,7 +90,7 @@ Here is my third PR for the issue.
 <!--chainlink-->
 1. #100 
 2. #101
-3. #102 &larr; you are here
+3. #102 ← you are here
 ```
 
 If at any point you add another PR. You can update one of the issues and run the command again to propagate the changes.
