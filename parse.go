@@ -31,7 +31,7 @@ func Parse(current ChainIssue, content string) (*Chain, error) {
 	}
 
 	checklists := findChecklistBlocks(content)
-	headers := findRE(content, headerRE)
+
 	for _, ind := range indicators {
 		indLineNumber := ind.LineNumber
 
@@ -46,7 +46,7 @@ func Parse(current ChainIssue, content string) (*Chain, error) {
 
 		checklistForIndicator := checklists[c]
 		return &Chain{
-			Header:  closestValidHeaderTo(content, headers, indLineNumber),
+			Header:  closestValidHeaderTo(content, indLineNumber).Raw,
 			Source:  current,
 			Current: current,
 			Items:   blockToItems(current, checklistForIndicator),
@@ -91,9 +91,22 @@ func ReplaceChain(body, chain string) string {
 			continue
 		}
 
+		start := indLineNumber
+		// start from header if it was found in body and replacement chain
+		if closestValidHeaderTo(chain, findRE(chain, indicatorRE)[0].LineNumber).Raw != "" {
+			header := closestValidHeaderTo(body, indLineNumber)
+			if header.Raw != "" {
+				start = header.LineNumber
+			}
+		}
+
+		// end at bottom of checklist
 		checklistForIndicator := checklists[c]
-		body = removeLines(body, indLineNumber, checklistForIndicator.LineNumbers[len(checklistForIndicator.LineNumbers)-1])
-		return insertLinesAt(body, indLineNumber, chain)
+		checklistEndLineNumber := checklistForIndicator.LineNumbers[len(checklistForIndicator.LineNumbers)-1]
+
+		// remove and insert new checklist
+		body = removeLines(body, start, checklistEndLineNumber)
+		return insertLinesAt(body, start, chain)
 	}
 
 	return strings.ReplaceAll(body, indicators[0].Raw, chain)
@@ -242,9 +255,10 @@ func findChecklistBlocks(content string) (blocks []block) {
 	return blocks
 }
 
-func closestValidHeaderTo(content string, headers []reMatch, indLineNumber int) string {
+func closestValidHeaderTo(content string, indLineNumber int) reMatch {
+	headers := findRE(content, headerRE)
 	if len(headers) == 0 {
-		return ""
+		return reMatch{LineNumber: -1}
 	}
 
 	h := sort.Search(len(headers), func(i int) bool {
@@ -256,10 +270,10 @@ func closestValidHeaderTo(content string, headers []reMatch, indLineNumber int) 
 	for i := closest.LineNumber + 1; i < indLineNumber; i++ {
 		// check all lines between header and indicator are empty
 		if len(strings.TrimSpace(lines[i])) > 0 {
-			return ""
+			return reMatch{LineNumber: -1}
 		}
 	}
-	return closest.Raw
+	return closest
 }
 
 // Concat returns a new slice concatenating the passed in slices.

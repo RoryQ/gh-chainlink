@@ -276,6 +276,21 @@ func TestReplaceChain(t *testing.T) {
 			chain: "<!--chainlink-->\n1. #1 &larr; you are here",
 			want:  "Some Text.\n<!--chainlink-->\n1. #1 &larr; you are here",
 		},
+		"BodyHasChainlinkNoHeader": {
+			body:  "<!--chainlink-->\n\n1. #1",
+			chain: "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
+		"BodyHasChainlinkAndHeader": {
+			body:  "### PR Chain\n<!--chainlink-->\n\n1. #1",
+			chain: "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
+		"BodyHasChainlinkAndHeaderButChainDoesNot": {
+			body:  "### PR Chain\n<!--chainlink-->\n\n1. #1",
+			chain: "<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
