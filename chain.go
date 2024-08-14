@@ -46,11 +46,18 @@ type ChainIssue struct {
 }
 
 func (i ChainIssue) Path() string {
-	return fmt.Sprintf("repos/%s/%s/issues/%d", i.Repo.Owner, i.Repo.Name, i.Number)
+	if i.IsPullRequest {
+		return fmt.Sprint("repos/", i.Repo.Owner, "/", i.Repo.Name, "/pulls/", i.Number)
+	}
+	return fmt.Sprint("repos/", i.Repo.Owner, "/", i.Repo.Name, "/issues/", i.Number)
 }
 
 func (i ChainIssue) HostPath() string {
-	return fmt.Sprintf("%s/repos/%s/%s/issues/%d", i.Repo.Host, i.Repo.Owner, i.Repo.Name, i.Number)
+	return fmt.Sprint(i.Repo.Host, "/", i.Path())
+}
+
+func (i ChainIssue) IsSame(other ChainIssue) bool {
+	return i.Repo == other.Repo && i.Number == other.Number
 }
 
 func (i ChainItem) Render(pointIndex int) string {
@@ -87,7 +94,7 @@ func (c Chain) ResetCurrent(to ChainIssue) Chain {
 	newChain.Current = to
 	for i := range c.Items {
 		c.Items[i].IsCurrent = false
-		if c.Items[i].ChainIssue.HostPath() == to.HostPath() {
+		if c.Items[i].ChainIssue.IsSame(to) {
 			c.Items[i].IsCurrent = true
 		}
 	}

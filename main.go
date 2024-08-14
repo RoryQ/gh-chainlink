@@ -48,16 +48,16 @@ func main() {
 	}
 
 	// get chain from ref issue
-	issue := must(client.GetIssue(targetIssue.Number))
+	issue := must(client.GetIssue(targetIssue))
 	chain := must(Parse(targetIssue, issue.Body))
 
 	// Upsert each linked issue with current chain, skipping current item
 	for i, item := range chain.Items {
-		chain.Items[i].IsPullRequest = client.IsPull(item.Number)
+		chain.Items[i].IsPullRequest = client.IsPull(item.ChainIssue)
 
 		issueChainString := chain.ResetCurrent(item.ChainIssue).RenderMarkdown()
 
-		itemIssue, err := client.GetIssue(item.Number)
+		itemIssue, err := client.GetIssue(item.ChainIssue)
 		if err != nil {
 			slog.Error("Error retrieving item", "number", item.Number, "error", err)
 			continue
@@ -66,10 +66,14 @@ func main() {
 		updatedBody := ReplaceChain(itemIssue.Body, issueChainString)
 
 		if updatedBody != itemIssue.Body {
-			err := client.UpdateIssueBody(item.Number, updatedBody)
+			err := client.UpdateIssueBody(item.ChainIssue, updatedBody)
 			if err != nil {
 				slog.Error("Error updating item", "number", item.Number, "error", err)
 			}
+
+			slog.Info("Updated checklist for issue", "host", item.Repo.Host, "number", item.Number)
+		} else {
+			slog.Info("No update required", "host", item.Repo.Host, "number", item.Number)
 		}
 	}
 }
