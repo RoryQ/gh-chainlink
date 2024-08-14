@@ -93,7 +93,7 @@ func getTargetIssue(args []string) ChainIssue {
 	}
 
 	// detect from branch
-	stdOut, stdErr, err := gh.Exec("pr", "status", "--json", "number,baseRefName")
+	stdOut, stdErr, err := gh.Exec("pr", "status", "--json", "number,baseRefName,url")
 	if err != nil {
 		panic(err)
 	}
@@ -103,6 +103,7 @@ func getTargetIssue(args []string) ChainIssue {
 	jsonResp := struct {
 		CurrentBranch struct {
 			BaseRefName string `json:"baseRefName"`
+			Number      int    `json:"number"`
 			Url         string `json:"url"`
 		}
 	}{}
