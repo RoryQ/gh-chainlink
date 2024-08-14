@@ -102,9 +102,8 @@ func getTargetIssue(args []string) ChainIssue {
 
 	jsonResp := struct {
 		CurrentBranch struct {
-			BaseRefName string
-			Number      string
-			Url         string
+			BaseRefName string `json:"baseRefName"`
+			Url         string `json:"url"`
 		}
 	}{}
 	must0(json.Unmarshal(stdOut.Bytes(), &jsonResp))
