@@ -71,9 +71,9 @@ func main() {
 				slog.Error("Error updating item", "number", item.Number, "error", err)
 			}
 
-			slog.Info("Updated checklist for issue", "host", item.Repo.Host, "number", item.Number)
+			printUpdated(item.Message)
 		} else {
-			slog.Info("No update required", "host", item.Repo.Host, "number", item.Number)
+			printSkipped(item.Message)
 		}
 	}
 }
@@ -123,4 +123,12 @@ func must0(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func printUpdated(message string) {
+	fmt.Println(color.GreenString("✓"), message)
+}
+
+func printSkipped(message string) {
+	fmt.Println(color.YellowString("∅"), message)
 }
