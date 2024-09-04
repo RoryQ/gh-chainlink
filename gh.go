@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/cli/go-gh/v2/pkg/api"
+	"github.com/cli/go-gh/v2/pkg/auth"
 	"github.com/cli/go-gh/v2/pkg/repository"
 )
 
@@ -19,18 +20,20 @@ type GhClient struct {
 	currentBranch string
 }
 
+func (c *GhClient) InGitRepo() bool {
+	return c.currentRepo != (repository.Repository{})
+}
+
 func NewGhClient() (*GhClient, error) {
+	host, _ := auth.DefaultHost()
 	apiClient, err := api.DefaultRESTClient()
 	if err != nil {
 		return nil, err
 	}
-	current, err := repository.Current()
-	if err != nil {
-		return nil, err
-	}
 
+	current, _ := repository.Current()
 	apiClientHostLookup := map[string]*api.RESTClient{
-		current.Host: apiClient,
+		host: apiClient,
 	}
 
 	return &GhClient{clientLookup: apiClientHostLookup, currentRepo: current}, nil

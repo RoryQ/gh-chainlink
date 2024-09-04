@@ -171,6 +171,12 @@ func parseMessage(s map[string]string) string {
 }
 
 func issueFromMessage(currentRepo repository.Repository, s string) ChainIssue {
+	issue := issueFromString(s)
+	issue.Repo = currentRepo
+	return issue
+}
+
+func issueFromString(s string) ChainIssue {
 	urlRE := regexp.MustCompile(`(?:https?://(?P<host>[^/]+)/(?P<owner>[^/]+)/(?P<repo>[^/]+)/(issues|pull)/(?P<number>\d+).*)`)
 	numberRE := regexp.MustCompile(`(?:#(?P<number>\d+))`)
 
@@ -194,7 +200,6 @@ func issueFromMessage(currentRepo repository.Repository, s string) ChainIssue {
 
 	if numberMatch, matched := FindMatchGroups(numberRE, s); matched {
 		return ChainIssue{
-			Repo:   currentRepo,
 			Number: atoi(numberMatch["number"]),
 		}
 	}

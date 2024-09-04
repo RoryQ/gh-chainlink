@@ -79,7 +79,7 @@ func main() {
 }
 
 func getTargetIssue(args []string) ChainIssue {
-	currentRepo := must(repository.Current())
+	currentRepo, _ := repository.Current()
 	// use first argument
 	if len(args) >= 1 {
 		issueRef := args[0]
@@ -89,7 +89,20 @@ func getTargetIssue(args []string) ChainIssue {
 			issueRef = "#" + issueRef
 		}
 
-		return issueFromMessage(currentRepo, issueRef)
+		issue := issueFromString(issueRef)
+		// Argument was a URL
+		if issue.Number != 0 && issue.Repo.Host != "" {
+			return issue
+		}
+
+		// Argument was a number
+		issue.Repo = currentRepo
+		if issue.Number != 0 && issue.Repo.Host != "" {
+			return issue
+		}
+
+		// bad argument
+		return ChainIssue{}
 	}
 
 	// detect from branch
@@ -97,7 +110,6 @@ func getTargetIssue(args []string) ChainIssue {
 	if err != nil {
 		panic(err)
 	}
-
 	println(stdErr.String())
 
 	jsonResp := struct {
