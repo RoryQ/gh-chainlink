@@ -69,9 +69,9 @@ func main() {
 	}
 }
 
-func updateIssue(client *GhClient, chain Chain, i int, item ChainItem) (string, error) {
-	chain.Items[i].IsPullRequest = client.IsPull(item.ChainIssue)
-
+func updateIssue(client *GhClient, chain Chain, item ChainItem) (string, error) {
+	item.IsPullRequest = client.IsPull(item.ChainIssue)
+	// update the CurrentLocationIndicator to the current issue
 	issueChainString := chain.ResetCurrent(item.ChainIssue).RenderMarkdown()
 
 	itemIssue, err := client.GetIssue(item.ChainIssue)
@@ -80,16 +80,15 @@ func updateIssue(client *GhClient, chain Chain, i int, item ChainItem) (string, 
 	}
 
 	updatedBody := ReplaceChain(itemIssue.Body, issueChainString)
-	if updatedBody != itemIssue.Body {
-		err := client.UpdateIssueBody(item.ChainIssue, updatedBody)
-		if err != nil {
-			return "error", fmt.Errorf("error updating item %d: %w", item.Number, err)
-		}
-
-		return "updated", nil
+	if updatedBody == itemIssue.Body {
+		return "skipped", nil
 	}
 
-	return "skipped", nil
+	if err := client.UpdateIssueBody(item.ChainIssue, updatedBody); err != nil {
+		return "error", fmt.Errorf("error updating item %d: %w", item.Number, err)
+	}
+
+	return "updated", nil
 }
 
 func getTargetIssue(args []string) ChainIssue {
@@ -163,7 +162,7 @@ func (m model) updatePRs() tea.Cmd {
 		for i, item := range m.chain.Items {
 			i, item := i, item
 			p.Go(func() {
-				resp, err := updateIssue(m.gh, m.chain, i, item)
+				resp, err := updateIssue(m.gh, m.chain, item)
 				m.sub <- responseMsg{index: i, result: resp, err: err}
 			})
 		}
@@ -219,7 +218,6 @@ func (m model) View() string {
 			case "updated":
 				_, _ = fmt.Fprintln(sb, green("✓"), item.renderListPoint(i), item.Message)
 			case "skipped":
-
 				_, _ = fmt.Fprintln(sb, yellow("∅"), item.renderListPoint(i), item.Message)
 			case "error":
 				_, _ = fmt.Fprintln(sb, red("✗"), item.renderListPoint(i), item.Message, red(response.err))
