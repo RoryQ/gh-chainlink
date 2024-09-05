@@ -105,8 +105,7 @@ func (c Chain) RenderMarkdown() string {
 	templateString := `{{- if .Header }}{{ println .Header }}{{ end -}}
 <!-- chainlink generated from {{.Source.HostPath}} -->
 {{- range $i, $v :=  .Items }} 
-{{$v.Render $i }} {{- end}}
-`
+{{$v.Render $i }} {{- end}}`
 
 	tmpl := template.Must(template.New("").Parse(templateString))
 	buf := new(bytes.Buffer)
