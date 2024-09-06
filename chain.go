@@ -94,10 +94,7 @@ func (c Chain) ResetCurrent(to ChainIssue) Chain {
 	newChain.Current = to
 	newChain.Items = []ChainItem{}
 	for _, item := range c.Items {
-		item.IsCurrent = false
-		if item.ChainIssue.IsSame(to) {
-			item.IsCurrent = true
-		}
+		item.IsCurrent = item.ChainIssue.IsSame(to)
 		newChain.Items = append(newChain.Items, item)
 	}
 	return newChain
