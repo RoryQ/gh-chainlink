@@ -92,11 +92,13 @@ func iif[T any](cond bool, a, b T) T {
 func (c Chain) ResetCurrent(to ChainIssue) Chain {
 	newChain := c
 	newChain.Current = to
-	for i := range c.Items {
-		c.Items[i].IsCurrent = false
-		if c.Items[i].ChainIssue.IsSame(to) {
-			c.Items[i].IsCurrent = true
+	newChain.Items = []ChainItem{}
+	for _, item := range c.Items {
+		item.IsCurrent = false
+		if item.ChainIssue.IsSame(to) {
+			item.IsCurrent = true
 		}
+		newChain.Items = append(newChain.Items, item)
 	}
 	return newChain
 }
