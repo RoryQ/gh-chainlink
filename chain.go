@@ -56,6 +56,10 @@ func (i ChainIssue) HostPath() string {
 	return fmt.Sprint(i.Repo.Host, "/", i.Path())
 }
 
+func (i ChainIssue) URL() string {
+	return fmt.Sprint("https://", i.Repo.Host, "/", i.Repo.Owner, "/", i.Repo.Name, "/pull/", i.Number)
+}
+
 func (i ChainIssue) IsSame(other ChainIssue) bool {
 	return i.Repo == other.Repo && i.Number == other.Number
 }
@@ -95,6 +99,10 @@ func (c Chain) ResetCurrent(to ChainIssue) Chain {
 	newChain.Items = []ChainItem{}
 	for _, item := range c.Items {
 		item.IsCurrent = item.ChainIssue.IsSame(to)
+		// If the source is different then replace the message with the full url
+		if newChain.Current.Repo != newChain.Source.Repo {
+			item.Message = item.URL()
+		}
 		newChain.Items = append(newChain.Items, item)
 	}
 	return newChain
