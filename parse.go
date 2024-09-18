@@ -172,7 +172,9 @@ func parseMessage(s map[string]string) string {
 
 func issueFromMessage(currentRepo repository.Repository, s string) ChainIssue {
 	issue := issueFromString(s)
-	issue.Repo = currentRepo
+	if issue.Repo == (repository.Repository{}) {
+		issue.Repo = currentRepo
+	}
 	return issue
 }
 
