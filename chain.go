@@ -57,7 +57,10 @@ func (i ChainIssue) HostPath() string {
 }
 
 func (i ChainIssue) URL() string {
-	return fmt.Sprint("https://", i.Repo.Host, "/", i.Repo.Owner, "/", i.Repo.Name, "/pull/", i.Number)
+	if i.IsPullRequest {
+		return fmt.Sprint("https://", i.Repo.Host, "/", i.Repo.Owner, "/", i.Repo.Name, "/pull/", i.Number)
+	}
+	return fmt.Sprint("https://", i.Repo.Host, "/", i.Repo.Owner, "/", i.Repo.Name, "/issues/", i.Number)
 }
 
 func (i ChainIssue) IsSame(other ChainIssue) bool {
@@ -110,7 +113,7 @@ func (c Chain) ResetCurrent(to ChainIssue) Chain {
 
 func (c Chain) RenderMarkdown() string {
 	templateString := `{{- if .Header }}{{ println .Header }}{{ end -}}
-<!-- chainlink generated from {{.Source.HostPath}} -->
+<!-- chainlink generated from {{.Source.URL}} -->
 {{- range $i, $v :=  .Items }} 
 {{$v.Render $i }} {{- end}}`
 

@@ -73,11 +73,10 @@ func TestChain_RenderMarkdown(t *testing.T) {
 			},
 		}
 
-		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
+		expected := `<!-- chainlink generated from https://github.com/RoryQ/gh-chainlink/issues/1 --> 
 - [ ] #12 &larr; you are here 
 - [x] #34 
-- [x] #56
-`
+- [x] #56`
 		assert.Equal(t, expected, chain.RenderMarkdown())
 	})
 
@@ -104,11 +103,10 @@ func TestChain_RenderMarkdown(t *testing.T) {
 			},
 		}
 
-		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
+		expected := `<!-- chainlink generated from https://github.com/RoryQ/gh-chainlink/issues/1 --> 
 1. #12 &larr; you are here 
 2. #34 
-3. #56
-`
+3. #56`
 		assert.Equal(t, expected, chain.RenderMarkdown())
 	})
 
@@ -135,11 +133,10 @@ func TestChain_RenderMarkdown(t *testing.T) {
 			},
 		}
 
-		expected := `<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
+		expected := `<!-- chainlink generated from https://github.com/RoryQ/gh-chainlink/issues/1 --> 
 - #12 &larr; you are here 
 - #34 
-- #56
-`
+- #56`
 		assert.Equal(t, expected, chain.RenderMarkdown())
 	})
 
@@ -168,11 +165,10 @@ func TestChain_RenderMarkdown(t *testing.T) {
 		}
 
 		expected := `### PR Chain
-<!-- chainlink generated from github.com/repos/RoryQ/gh-chainlink/issues/1 --> 
+<!-- chainlink generated from https://github.com/RoryQ/gh-chainlink/issues/1 --> 
 - #12 &larr; you are here 
 - #34 
-- #56
-`
+- #56`
 		assert.Equal(t, expected, chain.RenderMarkdown())
 	})
 }
