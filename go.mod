@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/charmbracelet/bubbletea v1.1.0
-	github.com/cli/go-gh/v2 v2.9.0
+	github.com/cli/go-gh/v2 v2.11.1
 	github.com/fatih/color v1.17.0
 	github.com/sourcegraph/conc v0.3.0
 	github.com/stretchr/testify v1.9.0

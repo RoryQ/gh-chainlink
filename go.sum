@@ -10,8 +10,8 @@ github.com/charmbracelet/x/ansi v0.2.3 h1:VfFN0NUpcjBRd4DnKfRaIRo53KRgey/nhOoEqo
 github.com/charmbracelet/x/ansi v0.2.3/go.mod h1:dk73KoMTT5AX5BsX0KrqhsTqAnhZZoCBjs7dGWp4Ktw=
 github.com/charmbracelet/x/term v0.2.0 h1:cNB9Ot9q8I711MyZ7myUR5HFWL/lc3OpU8jZ4hwm0x0=
 github.com/charmbracelet/x/term v0.2.0/go.mod h1:GVxgxAbjUrmpvIINHIQnJJKpMlHiZ4cktEQCN6GWyF0=
-github.com/cli/go-gh/v2 v2.9.0 h1:D3lTjEneMYl54M+WjZ+kRPrR5CEJ5BHS05isBPOV3LI=
-github.com/cli/go-gh/v2 v2.9.0/go.mod h1:MeRoKzXff3ygHu7zP+NVTT+imcHW6p3tpuxHAzRM2xE=
+github.com/cli/go-gh/v2 v2.11.1 h1:amAyfqMWQTBdue8iTmDUegGZK7c8kk6WCxD9l/wLtGI=
+github.com/cli/go-gh/v2 v2.11.1/go.mod h1:MeRoKzXff3ygHu7zP+NVTT+imcHW6p3tpuxHAzRM2xE=
 github.com/cli/safeexec v1.0.1 h1:e/C79PbXF4yYTN/wauC4tviMxEV13BwljGj0N9j+N00=
 github.com/cli/safeexec v1.0.1/go.mod h1:Z/D4tTN8Vs5gXYHDCbaM1S/anmEDnJb1iW0+EJ5zx3Q=
 github.com/cli/shurcooL-graphql v0.0.4 h1:6MogPnQJLjKkaXPyGqPRXOI2qCsQdqNfUY1QSJu2GuY=
