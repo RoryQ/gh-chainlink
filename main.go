@@ -31,8 +31,11 @@ func main() {
 		fmt.Fprintf(color.Output, "%s\n\n", "Chainlink - link chained pull requests and issues.")
 		fmt.Fprintf(color.Output, "%s\n", bold("USAGE"))
 		fmt.Fprintf(color.Output, "  %s\n", "gh chainlink <issue ref>")
+		fmt.Fprintf(color.Output, "  %s\n", "gh chainlink <issue ref> <issue ref> ...")
+		fmt.Fprintf(color.Output, "  %s\n", "gh chainlink new <issue ref> <issue ref> ...")
 		fmt.Fprintf(color.Output, "  %s\n\n", "gh chainlink append <first issue ref> <issue ref> ...")
 		fmt.Fprintf(color.Output, "%s\n", bold("COMMANDS"))
+		fmt.Fprintf(color.Output, "  %s\n", "new: Create a new chain from the list of references, write it to the first PR, and sync.")
 		fmt.Fprintf(color.Output, "  %s\n\n", "append: Lookup the chain in the first issue/PR, append the rest, and sync them.")
 		fmt.Fprintf(color.Output, "%s", bold("ISSUE REF"))
 		fmt.Fprintf(color.Output, "%s\n", `
@@ -47,6 +50,73 @@ func main() {
 
 	// Detect repo and issue for current branch
 	client := must(NewGhClient())
+
+	var runNew bool
+	var newRefs []string
+
+	if len(args) > 0 && args[0] == "new" {
+		runNew = true
+		newRefs = args[1:]
+		if len(newRefs) < 1 {
+			fmt.Fprintf(os.Stderr, "Error: 'new' requires at least one issue/PR reference.\n\n")
+			flag.Usage()
+			os.Exit(1)
+		}
+	} else if len(args) >= 2 && args[0] != "append" {
+		runNew = true
+		newRefs = args
+	}
+
+	if runNew {
+		firstIssue := parseIssueArg(newRefs[0], client.currentRepo)
+		if firstIssue.Number == 0 {
+			fmt.Fprintf(os.Stderr, "Error: Invalid first issue reference %q\n", newRefs[0])
+			os.Exit(1)
+		}
+
+		chain := &Chain{
+			Header:  "## PR Chain",
+			Source:  firstIssue,
+			Current: firstIssue,
+			Items:   []ChainItem{},
+		}
+
+		for _, arg := range newRefs {
+			issue := parseIssueArg(arg, client.currentRepo)
+			if issue.Number == 0 {
+				fmt.Fprintf(os.Stderr, "Error: Invalid issue reference %q\n", arg)
+				os.Exit(1)
+			}
+
+			if !chain.Contains(issue) {
+				message := fmt.Sprintf("#%d", issue.Number)
+				if issue.Repo != chain.Source.Repo {
+					message = issue.URL()
+				}
+
+				chain.Items = append(chain.Items, ChainItem{
+					ChainIssue: issue,
+					IsCurrent:  issue.IsSame(chain.Current),
+					Message:    message,
+					ItemState:  Numbered,
+				})
+			}
+		}
+
+		_, err := tea.NewProgram(model{
+			gh:        client,
+			sub:       make(chan responseMsg),
+			responses: make(map[int]responseMsg),
+			chain:     *chain,
+		}).Run()
+
+		if err != nil {
+			slog.Error("Error running program", "error", err)
+			os.Exit(1)
+		}
+
+		os.Exit(0)
+	}
 
 	if len(args) > 0 && args[0] == "append" {
 		if len(args) < 3 {
