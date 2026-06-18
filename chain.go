@@ -122,3 +122,13 @@ func (c Chain) RenderMarkdown() string {
 	must0(tmpl.Execute(buf, c))
 	return buf.String()
 }
+
+func (c Chain) Contains(issue ChainIssue) bool {
+	for _, item := range c.Items {
+		if item.ChainIssue.IsSame(issue) {
+			return true
+		}
+	}
+	return false
+}
+

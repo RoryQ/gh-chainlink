@@ -172,3 +172,21 @@ func TestChain_RenderMarkdown(t *testing.T) {
 		assert.Equal(t, expected, chain.RenderMarkdown())
 	})
 }
+
+func TestChain_Contains(t *testing.T) {
+	issue1 := ChainIssue{Number: 1}
+	issue2 := ChainIssue{Number: 2}
+	issue3 := ChainIssue{Number: 3}
+
+	chain := Chain{
+		Items: []ChainItem{
+			{ChainIssue: issue1},
+			{ChainIssue: issue2},
+		},
+	}
+
+	assert.True(t, chain.Contains(issue1))
+	assert.True(t, chain.Contains(issue2))
+	assert.False(t, chain.Contains(issue3))
+}
+

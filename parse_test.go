@@ -255,6 +255,52 @@ func Test_issueFromMessage(t *testing.T) {
 	}
 }
 
+func Test_parseIssueArg(t *testing.T) {
+	currentRepo := repository.Repository{
+		Host:  "github.com",
+		Name:  "gh-chainlink",
+		Owner: "RoryQ",
+	}
+
+	tests := map[string]struct {
+		arg  string
+		want ChainIssue
+	}{
+		"NumberOnly": {
+			arg: "123",
+			want: ChainIssue{
+				Repo:   currentRepo,
+				Number: 123,
+			},
+		},
+		"HashNumber": {
+			arg: "#123",
+			want: ChainIssue{
+				Repo:   currentRepo,
+				Number: 123,
+			},
+		},
+		"Url": {
+			arg: "https://github.com/owner/repo/pull/456",
+			want: ChainIssue{
+				Repo: repository.Repository{
+					Host:  "github.com",
+					Name:  "repo",
+					Owner: "owner",
+				},
+				Number: 456,
+			},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tt.want, parseIssueArg(tt.arg, currentRepo))
+		})
+	}
+}
+
+
 func TestReplaceChain(t *testing.T) {
 	tests := map[string]struct {
 		body  string

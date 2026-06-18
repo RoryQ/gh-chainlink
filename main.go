@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -29,7 +30,10 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(color.Output, "%s\n\n", "Chainlink - link chained pull requests and issues.")
 		fmt.Fprintf(color.Output, "%s\n", bold("USAGE"))
-		fmt.Fprintf(color.Output, "  %s\n\n", "gh chainlink <issue ref>")
+		fmt.Fprintf(color.Output, "  %s\n", "gh chainlink <issue ref>")
+		fmt.Fprintf(color.Output, "  %s\n\n", "gh chainlink append <first issue ref> <issue ref> ...")
+		fmt.Fprintf(color.Output, "%s\n", bold("COMMANDS"))
+		fmt.Fprintf(color.Output, "  %s\n\n", "append: Lookup the chain in the first issue/PR, append the rest, and sync them.")
 		fmt.Fprintf(color.Output, "%s", bold("ISSUE REF"))
 		fmt.Fprintf(color.Output, "%s\n", `
   autodetect: Leave empty to use the pull request for the current branch.
@@ -43,6 +47,89 @@ func main() {
 
 	// Detect repo and issue for current branch
 	client := must(NewGhClient())
+
+	if len(args) > 0 && args[0] == "append" {
+		if len(args) < 3 {
+			fmt.Fprintf(os.Stderr, "Error: 'append' requires at least two issue/PR references (the target first issue/PR, and the issue/PRs to append).\n\n")
+			flag.Usage()
+			os.Exit(1)
+		}
+
+		firstIssue := parseIssueArg(args[1], client.currentRepo)
+		if firstIssue.Number == 0 {
+			fmt.Fprintf(os.Stderr, "Error: Invalid first issue reference %q\n", args[1])
+			os.Exit(1)
+		}
+
+		issue, err := client.GetIssue(firstIssue)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching first issue: %v\n", err)
+			os.Exit(1)
+		}
+
+		chain, err := Parse(firstIssue, issue.Body)
+		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				chain = &Chain{
+					Header:  "## PR Chain",
+					Source:  firstIssue,
+					Current: firstIssue,
+					Items: []ChainItem{
+						{
+							ChainIssue: firstIssue,
+							IsCurrent:  true,
+							Message:    fmt.Sprintf("#%d", firstIssue.Number),
+							ItemState:  Numbered,
+						},
+					},
+				}
+			} else {
+				fmt.Fprintf(os.Stderr, "Error parsing issue body: %v\n", err)
+				os.Exit(1)
+			}
+		}
+
+		for _, arg := range args[2:] {
+			appendedIssue := parseIssueArg(arg, client.currentRepo)
+			if appendedIssue.Number == 0 {
+				fmt.Fprintf(os.Stderr, "Error: Invalid issue reference to append %q\n", arg)
+				os.Exit(1)
+			}
+
+			if !chain.Contains(appendedIssue) {
+				message := fmt.Sprintf("#%d", appendedIssue.Number)
+				if appendedIssue.Repo != chain.Source.Repo {
+					message = appendedIssue.URL()
+				}
+
+				itemState := Numbered
+				if len(chain.Items) > 0 {
+					itemState = chain.Items[len(chain.Items)-1].ItemState
+				}
+
+				chain.Items = append(chain.Items, ChainItem{
+					ChainIssue: appendedIssue,
+					IsCurrent:  appendedIssue.IsSame(chain.Current),
+					Message:    message,
+					ItemState:  itemState,
+				})
+			}
+		}
+
+		_, err = tea.NewProgram(model{
+			gh:        client,
+			sub:       make(chan responseMsg),
+			responses: make(map[int]responseMsg),
+			chain:     *chain,
+		}).Run()
+
+		if err != nil {
+			slog.Error("Error running program", "error", err)
+			os.Exit(1)
+		}
+
+		os.Exit(0)
+	}
 
 	// Use provided issue ref if provided
 	targetIssue := getTargetIssue(args)
@@ -91,32 +178,31 @@ func updateIssue(client *GhClient, chain Chain, item ChainItem) (string, error) 
 	return "updated", nil
 }
 
+func parseIssueArg(arg string, currentRepo repository.Repository) ChainIssue {
+	issueRef := arg
+	// current repo reference if number only
+	if _, err := strconv.Atoi(issueRef); err == nil {
+		issueRef = "#" + issueRef
+	}
+
+	issue := issueFromString(issueRef)
+	// Argument was a URL
+	if issue.Number != 0 && issue.Repo.Host != "" {
+		return issue
+	}
+
+	// Argument was a number
+	issue.Repo = currentRepo
+	return issue
+}
+
 func getTargetIssue(args []string) ChainIssue {
 	currentRepo, _ := repository.Current()
 	// use first argument
 	if len(args) >= 1 {
-		issueRef := args[0]
-
-		// current repo reference if number only
-		if _, err := strconv.Atoi(issueRef); err == nil {
-			issueRef = "#" + issueRef
-		}
-
-		issue := issueFromString(issueRef)
-		// Argument was a URL
-		if issue.Number != 0 && issue.Repo.Host != "" {
-			return issue
-		}
-
-		// Argument was a number
-		issue.Repo = currentRepo
-		if issue.Number != 0 && issue.Repo.Host != "" {
-			return issue
-		}
-
-		// bad argument
-		return ChainIssue{}
+		return parseIssueArg(args[0], currentRepo)
 	}
+
 
 	// detect from branch
 	stdOut, stdErr, err := gh.Exec("pr", "status", "--json", "number,baseRefName,url")
