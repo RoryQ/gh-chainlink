@@ -199,6 +199,72 @@ func TestParse(t *testing.T) {
 			},
 			errAssert: assert.NoError,
 		},
+		"WithHeaderAndHTMLComment": {
+			current: TestIssue,
+			content: fmt.Sprintf("### PR Chain \n<!-- some comment -->\n%s", BulletedItems),
+			want: &Chain{
+				Header:  "### PR Chain ",
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
+		"WithHeaderAndMultilineHTMLComment": {
+			current: TestIssue,
+			content: fmt.Sprintf("### PR Chain \n<!-- some comment\nspanning multiple lines\n-->\n%s", BulletedItems),
+			want: &Chain{
+				Header:  "### PR Chain ",
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -336,6 +402,16 @@ func TestReplaceChain(t *testing.T) {
 			body:  "### PR Chain\n<!--chainlink-->\n\n1. #1",
 			chain: "<!--chainlink-->\n1. #1 &larr; you are here",
 			want:  "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
+		"BodyHasChainlinkAndHeaderAndHTMLComment": {
+			body:  "### PR Chain\n<!-- comment -->\n<!--chainlink-->\n\n1. #1",
+			chain: "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
+		"BodyHasChainlinkAndHeaderAndHTMLCommentButChainDoesNot": {
+			body:  "### PR Chain\n<!-- comment -->\n<!--chainlink-->\n\n1. #1",
+			chain: "<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "### PR Chain\n<!-- comment -->\n<!--chainlink-->\n1. #1 &larr; you are here",
 		},
 	}
 	for name, tt := range tests {

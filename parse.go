@@ -18,10 +18,11 @@ type reMatch struct {
 }
 
 var (
-	indicatorRE = regexp.MustCompile(`(?i)<!--\s*chainlink(?:\s*| generated from.*)-->`)
-	headerRE    = regexp.MustCompile(`(?im)^ {0,3}#{1,6}\s.*`)
-	itemRE      = regexp.MustCompile(`(?i)^\s{0,4}(- (?P<Checked>\[[ x]])?|(?P<Numbered>\d+)[.] )(:? *)(?P<Message>.*)`)
-	ErrNotFound = errors.New("no chainlink list found")
+	indicatorRE   = regexp.MustCompile(`(?i)<!--\s*chainlink(?:\s*| generated from.*)-->`)
+	headerRE      = regexp.MustCompile(`(?im)^ {0,3}#{1,6}\s.*`)
+	itemRE        = regexp.MustCompile(`(?i)^\s{0,4}(- (?P<Checked>\[[ x]])?|(?P<Numbered>\d+)[.] )(:? *)(?P<Message>.*)`)
+	htmlCommentRE = regexp.MustCompile(`<!--[\s\S]*?-->`)
+	ErrNotFound   = errors.New("no chainlink list found")
 )
 
 func Parse(current ChainIssue, content string) (*Chain, error) {
@@ -271,14 +272,16 @@ func closestValidHeaderTo(content string, indLineNumber int) reMatch {
 	h := sort.Search(len(headers), func(i int) bool {
 		return headers[i].LineNumber > indLineNumber
 	})
+	if h == 0 {
+		return reMatch{LineNumber: -1}
+	}
 	closest := headers[h-1]
 
 	lines := strings.Split(content, "\n")
-	for i := closest.LineNumber + 1; i < indLineNumber; i++ {
-		// check all lines between header and indicator are empty
-		if len(strings.TrimSpace(lines[i])) > 0 {
-			return reMatch{LineNumber: -1}
-		}
+	between := strings.Join(lines[closest.LineNumber+1:indLineNumber], "\n")
+	cleaned := htmlCommentRE.ReplaceAllString(between, "")
+	if len(strings.TrimSpace(cleaned)) > 0 {
+		return reMatch{LineNumber: -1}
 	}
 	return closest
 }
