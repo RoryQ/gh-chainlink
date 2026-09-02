@@ -10,10 +10,11 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbletea"
 	"github.com/cli/go-gh/v2"
 	"github.com/cli/go-gh/v2/pkg/repository"
 	"github.com/fatih/color"
+	"github.com/mattn/go-isatty"
 	"github.com/sourcegraph/conc/pool"
 )
 
@@ -25,6 +26,68 @@ var (
 	red     = color.New(color.FgRed).SprintFunc()
 	blue    = color.New(color.FgHiBlue).SprintFunc()
 )
+
+func isTTY() bool {
+	if os.Getenv("TERM") == "dumb" {
+		return false
+	}
+	return (isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())) &&
+		(isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()))
+}
+
+func runSync(client *GhClient, chain *Chain) {
+	var err error
+	if isTTY() {
+		err = runSyncInteractive(client, chain)
+	} else {
+		err = runSyncNonInteractive(client, chain)
+	}
+
+	if err != nil {
+		slog.Error("Error running program", "error", err)
+		os.Exit(1)
+	}
+}
+
+func runSyncInteractive(client *GhClient, chain *Chain) error {
+	_, err := tea.NewProgram(model{
+		gh:        client,
+		sub:       make(chan responseMsg),
+		responses: make(map[int]responseMsg),
+		chain:     *chain,
+	}).Run()
+	return err
+}
+
+func runSyncNonInteractive(client *GhClient, chain *Chain) error {
+	if chain.Header != "" {
+		fmt.Fprintln(color.Output, blue(chain.Header))
+	}
+
+	responses := make([]responseMsg, len(chain.Items))
+	p := pool.New().WithMaxGoroutines(5)
+	for i, item := range chain.Items {
+		i, item := i, item
+		p.Go(func() {
+			resp, err := updateIssue(client, *chain, item)
+			responses[i] = responseMsg{index: i, result: resp, err: err}
+		})
+	}
+	p.Wait()
+
+	for i, item := range chain.Items {
+		response := responses[i]
+		switch response.result {
+		case "updated":
+			fmt.Fprintln(color.Output, green("✓"), item.renderListPoint(i), item.Message)
+		case "skipped":
+			fmt.Fprintln(color.Output, yellow("∅"), item.renderListPoint(i), item.Message)
+		case "error":
+			fmt.Fprintln(color.Output, red("✗"), item.renderListPoint(i), item.Message, red(response.err))
+		}
+	}
+	return nil
+}
 
 func main() {
 	flag.Usage = func() {
@@ -49,7 +112,11 @@ func main() {
 	args := flag.Args()
 
 	// Detect repo and issue for current branch
-	client := must(NewGhClient())
+	client, err := NewGhClient()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing GitHub client: %v\n", err)
+		os.Exit(1)
+	}
 
 	var runNew bool
 	var newRefs []string
@@ -103,18 +170,7 @@ func main() {
 			}
 		}
 
-		_, err := tea.NewProgram(model{
-			gh:        client,
-			sub:       make(chan responseMsg),
-			responses: make(map[int]responseMsg),
-			chain:     *chain,
-		}).Run()
-
-		if err != nil {
-			slog.Error("Error running program", "error", err)
-			os.Exit(1)
-		}
-
+		runSync(client, chain)
 		os.Exit(0)
 	}
 
@@ -186,18 +242,7 @@ func main() {
 			}
 		}
 
-		_, err = tea.NewProgram(model{
-			gh:        client,
-			sub:       make(chan responseMsg),
-			responses: make(map[int]responseMsg),
-			chain:     *chain,
-		}).Run()
-
-		if err != nil {
-			slog.Error("Error running program", "error", err)
-			os.Exit(1)
-		}
-
+		runSync(client, chain)
 		os.Exit(0)
 	}
 
@@ -210,20 +255,18 @@ func main() {
 	}
 
 	// get chain from ref issue
-	issue := must(client.GetIssue(targetIssue))
-	chain := must(Parse(targetIssue, issue.Body))
-
-	_, err := tea.NewProgram(model{
-		gh:        client,
-		sub:       make(chan responseMsg),
-		responses: make(map[int]responseMsg),
-		chain:     *chain,
-	}).Run()
-
+	issue, err := client.GetIssue(targetIssue)
 	if err != nil {
-		slog.Error("Error running program", "error", err)
+		fmt.Fprintf(os.Stderr, "Error fetching issue: %v\n", err)
 		os.Exit(1)
 	}
+	chain, err := Parse(targetIssue, issue.Body)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing issue body: %v\n", err)
+		os.Exit(1)
+	}
+
+	runSync(client, chain)
 }
 
 func updateIssue(client *GhClient, chain Chain, item ChainItem) (string, error) {
@@ -275,11 +318,10 @@ func getTargetIssue(args []string) ChainIssue {
 
 
 	// detect from branch
-	stdOut, stdErr, err := gh.Exec("pr", "status", "--json", "number,baseRefName,url")
+	stdOut, _, err := gh.Exec("pr", "status", "--json", "number,baseRefName,url")
 	if err != nil {
-		panic(err)
+		return ChainIssue{}
 	}
-	println(stdErr.String())
 
 	jsonResp := struct {
 		CurrentBranch struct {
@@ -288,7 +330,9 @@ func getTargetIssue(args []string) ChainIssue {
 			Url         string `json:"url"`
 		}
 	}{}
-	must0(json.Unmarshal(stdOut.Bytes(), &jsonResp))
+	if err := json.Unmarshal(stdOut.Bytes(), &jsonResp); err != nil {
+		return ChainIssue{}
+	}
 
 	return issueFromMessage(currentRepo, jsonResp.CurrentBranch.Url)
 }
