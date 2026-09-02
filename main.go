@@ -257,12 +257,17 @@ func main() {
 	// get chain from ref issue
 	issue, err := client.GetIssue(targetIssue)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching issue: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: Could not fetch issue/PR #%d: %v\n", targetIssue.Number, err)
 		os.Exit(1)
 	}
 	chain, err := Parse(targetIssue, issue.Body)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing issue body: %v\n", err)
+		if errors.Is(err, ErrNotFound) {
+			fmt.Fprintf(os.Stderr, "Error: No chainlink block found in #%d.\n", targetIssue.Number)
+			fmt.Fprintf(os.Stderr, "Hint: Run 'gh chainlink new %d <pr-refs>...' to create a chain, or add '<!-- chainlink -->' to the issue description.\n", targetIssue.Number)
+		} else {
+			fmt.Fprintf(os.Stderr, "Error parsing issue body: %v\n", err)
+		}
 		os.Exit(1)
 	}
 
@@ -335,19 +340,6 @@ func getTargetIssue(args []string) ChainIssue {
 	}
 
 	return issueFromMessage(currentRepo, jsonResp.CurrentBranch.Url)
-}
-
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
-
-func must0(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
 
 type responseMsg struct {
