@@ -119,7 +119,7 @@ func (c Chain) RenderMarkdown() string {
 
 	tmpl := template.Must(template.New("").Parse(templateString))
 	buf := new(bytes.Buffer)
-	must0(tmpl.Execute(buf, c))
+	_ = tmpl.Execute(buf, c)
 	return buf.String()
 }
 
