@@ -93,19 +93,70 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(color.Output, "%s\n\n", "Chainlink - link chained pull requests and issues.")
 		fmt.Fprintf(color.Output, "%s\n", bold("USAGE"))
-		fmt.Fprintf(color.Output, "  %s\n", "gh chainlink <issue ref>")
+		fmt.Fprintf(color.Output, "  %s\n", "gh chainlink [issue ref]")
 		fmt.Fprintf(color.Output, "  %s\n", "gh chainlink <issue ref> <issue ref> ...")
 		fmt.Fprintf(color.Output, "  %s\n", "gh chainlink new <issue ref> <issue ref> ...")
 		fmt.Fprintf(color.Output, "  %s\n\n", "gh chainlink append <first issue ref> <issue ref> ...")
 		fmt.Fprintf(color.Output, "%s\n", bold("COMMANDS"))
-		fmt.Fprintf(color.Output, "  %s\n", "new: Create a new chain from the list of references, write it to the first PR, and sync.")
-		fmt.Fprintf(color.Output, "  %s\n\n", "append: Lookup the chain in the first issue/PR, append the rest, and sync them.")
-		fmt.Fprintf(color.Output, "%s", bold("ISSUE REF"))
-		fmt.Fprintf(color.Output, "%s\n", `
-  autodetect: Leave empty to use the pull request for the current branch.
-  number:   Enter the issue or pull request number for the current repo e.g. 123.
-  url: Enter the issue or pull request url e.g. https://github.com/RoryQ/gh-chainlink/issues/1
-  `)
+		fmt.Fprintf(color.Output, "  %s\n", "sync (default): Sync an existing chain across all linked PRs/issues.")
+		fmt.Fprintf(color.Output, "  %s\n", "new:            Create a new chain from the list of references, write it to the first PR, and sync.")
+		fmt.Fprintf(color.Output, "  %s\n\n", "append:         Lookup the chain in the first issue/PR, append the rest, and sync them.")
+		fmt.Fprintf(color.Output, "%s\n", bold("ISSUE REF FORMATS"))
+		fmt.Fprintf(color.Output, "%s\n", `  (empty)   Autodetect the pull request for the current git branch.
+  <number>  Issue or pull request number for current repo (e.g. 100, #100).
+  <url>     Full issue or PR URL (e.g. https://github.com/owner/repo/pull/100).`)
+		fmt.Fprintf(color.Output, "\n%s\n", bold("CLI EXAMPLES"))
+		fmt.Fprintf(color.Output, "%s\n", `  # Sync existing chain from current branch's PR across all linked PRs:
+  gh chainlink
+
+  # Sync existing chain defined in PR #100 across all linked PRs:
+  gh chainlink 100
+  gh chainlink https://github.com/owner/repo/pull/100
+
+  # Create a new chain for PRs #100, #101, #102 and sync across all of them:
+  gh chainlink 100 101 102
+  gh chainlink new 100 101 102
+
+  # Append PRs #103 and #104 to existing chain in PR #100:
+  gh chainlink append 100 103 104
+
+  # Cross-repository chaining:
+  gh chainlink 100 https://github.com/other-org/other-repo/pull/42`)
+		fmt.Fprintf(color.Output, "\n%s\n", bold("MARKDOWN MESSAGE FORMAT (PR / ISSUE BODY)"))
+		fmt.Fprintf(color.Output, "%s\n", `  To define a chain manually in a PR or issue body, include a markdown
+  header (e.g. '## PR Chain') followed by the '<!--chainlink-->' marker comment
+  and a list of issue references.
+
+  Example PR description in #100:
+  ----------------------------------------
+  # Description
+  Here is my first PR for the feature.
+
+  ## PR Chain
+  <!--chainlink-->
+  1. #100
+  2. #101
+  3. #102
+  ----------------------------------------
+
+  Supported list formats:
+    Numbered:   1. #100
+    Checklist:  - [ ] #100   or   - [x] #100
+    Bulleted:   - #100
+    Cross-repo: 1. https://github.com/owner/repo/pull/100
+
+  When synced, Chainlink updates each PR's body with the full chain and marks
+  the active PR with a '← you are here' indicator:
+
+  Example in PR #101 after sync:
+  ----------------------------------------
+  ## PR Chain
+  <!--chainlink generated from https://github.com/owner/repo/pull/100-->
+  1. #100
+  2. #101 ← you are here
+  3. #102
+  ----------------------------------------`)
+		fmt.Fprintf(color.Output, "\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
