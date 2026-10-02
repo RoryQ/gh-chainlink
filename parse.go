@@ -79,6 +79,8 @@ func ReplaceChain(body, chain string) string {
 		return body + "\n" + chain
 	}
 
+	chainIndicators := findRE(chain, indicatorRE)
+
 	checklists := findChecklistBlocks(body)
 	for _, ind := range indicators {
 		indLineNumber := ind.LineNumber
@@ -94,10 +96,10 @@ func ReplaceChain(body, chain string) string {
 
 		start := indLineNumber
 		// start from header if it was found in body and replacement chain
-		if closestValidHeaderTo(chain, findRE(chain, indicatorRE)[0].LineNumber).Raw != "" {
+		if len(chainIndicators) > 0 && closestValidHeaderTo(chain, chainIndicators[0].LineNumber).Raw != "" {
 			header := closestValidHeaderTo(body, indLineNumber)
 			if header.Raw != "" {
-				start = header.LineNumber
+				start = min(header.LineNumber, indLineNumber)
 			}
 		}
 
@@ -269,21 +271,38 @@ func closestValidHeaderTo(content string, indLineNumber int) reMatch {
 		return reMatch{LineNumber: -1}
 	}
 
-	h := sort.Search(len(headers), func(i int) bool {
-		return headers[i].LineNumber > indLineNumber
-	})
-	if h == 0 {
-		return reMatch{LineNumber: -1}
-	}
-	closest := headers[h-1]
-
 	lines := strings.Split(content, "\n")
-	between := strings.Join(lines[closest.LineNumber+1:indLineNumber], "\n")
-	cleaned := htmlCommentRE.ReplaceAllString(between, "")
-	if len(strings.TrimSpace(cleaned)) > 0 {
-		return reMatch{LineNumber: -1}
+	closest := reMatch{LineNumber: -1}
+	minDistance := -1
+
+	for _, header := range headers {
+		var between string
+		if header.LineNumber < indLineNumber {
+			between = strings.Join(lines[header.LineNumber+1:indLineNumber], "\n")
+		} else if header.LineNumber > indLineNumber {
+			between = strings.Join(lines[indLineNumber+1:header.LineNumber], "\n")
+		}
+
+		cleaned := htmlCommentRE.ReplaceAllString(between, "")
+		if len(strings.TrimSpace(cleaned)) > 0 {
+			continue
+		}
+
+		dist := abs(header.LineNumber - indLineNumber)
+		if minDistance == -1 || dist < minDistance {
+			minDistance = dist
+			closest = header
+		}
 	}
+
 	return closest
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // Concat returns a new slice concatenating the passed in slices.

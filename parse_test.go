@@ -265,6 +265,171 @@ func TestParse(t *testing.T) {
 			},
 			errAssert: assert.NoError,
 		},
+		"WithHeaderAndMultipleHTMLComments": {
+			current: TestIssue,
+			content: fmt.Sprintf("### PR Chain \n<!-- comment 1 -->\n<!-- comment 2 -->\n%s", BulletedItems),
+			want: &Chain{
+				Header:  "### PR Chain ",
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
+		"WithHeaderAndMultipleMultilineHTMLComments": {
+			current: TestIssue,
+			content: fmt.Sprintf("### PR Chain \n<!-- comment 1\nline 2 -->\n<!-- comment 2\nline 2 -->\n%s", BulletedItems),
+			want: &Chain{
+				Header:  "### PR Chain ",
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
+		"WithHeaderAfterIndicator": {
+			current: TestIssue,
+			content: fmt.Sprintf("<!-- chainlink -->\n### PR Chain \n- #1\n- #2 &larr; you are here"),
+			want: &Chain{
+				Header:  "### PR Chain ",
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
+		"WithMultipleHTMLCommentsAndHeaderAfterIndicator": {
+			current: TestIssue,
+			content: fmt.Sprintf("<!-- comment 1 -->\n<!-- chainlink -->\n<!-- comment 2 -->\n<!-- comment 3 -->\n### PR Chain \n- #1\n- #2 &larr; you are here"),
+			want: &Chain{
+				Header:  "### PR Chain ",
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
+		"WithMultipleHeadersSelectsClosest": {
+			current: TestIssue,
+			content: fmt.Sprintf("# Section 1\nSome description\n\n### PR Chain \n<!-- comment 1 -->\n<!-- comment 2 -->\n%s", BulletedItems),
+			want: &Chain{
+				Header:  "### PR Chain ",
+				Source:  TestIssue,
+				Current: TestIssue,
+				Items: []ChainItem{
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 1,
+						},
+						IsCurrent: true,
+						Message:   "#1",
+						ItemState: Bulleted,
+						Raw:       "- #1",
+					},
+					{
+						ChainIssue: ChainIssue{
+							Repo:   TestIssue.Repo,
+							Number: 2,
+						},
+						IsCurrent: false,
+						Message:   "#2",
+						ItemState: Bulleted,
+						Raw:       "- #2 &larr; you are here",
+					},
+				},
+				Raw: "- #1\n- #2 &larr; you are here",
+			},
+			errAssert: assert.NoError,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -412,6 +577,26 @@ func TestReplaceChain(t *testing.T) {
 			body:  "### PR Chain\n<!-- comment -->\n<!--chainlink-->\n\n1. #1",
 			chain: "<!--chainlink-->\n1. #1 &larr; you are here",
 			want:  "### PR Chain\n<!-- comment -->\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
+		"BodyHasMultipleHTMLCommentsBeforeIndicator": {
+			body:  "### PR Chain\n<!-- comment 1 -->\n<!-- comment 2 -->\n<!--chainlink-->\n\n1. #1",
+			chain: "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
+		"BodyHasCommentsSurroundingIndicator": {
+			body:  "### PR Chain\n<!-- comment 1 -->\n<!--chainlink-->\n<!-- comment 2 -->\n\n1. #1",
+			chain: "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
+		"BodyHasIndicatorBeforeHeader": {
+			body:  "<!--chainlink-->\n### PR Chain\n\n1. #1",
+			chain: "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+		},
+		"BodyHasMultipleCommentsAndIndicatorBeforeHeader": {
+			body:  "<!-- comment 1 -->\n<!--chainlink-->\n<!-- comment 2 -->\n### PR Chain\n\n1. #1",
+			chain: "### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
+			want:  "<!-- comment 1 -->\n### PR Chain\n<!--chainlink-->\n1. #1 &larr; you are here",
 		},
 	}
 	for name, tt := range tests {
